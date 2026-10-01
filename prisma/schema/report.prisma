@@ -1,0 +1,16 @@
+model Report {
+  id     String @id @default(uuid())
+  userId String
+
+  title    String
+  filePath String?
+  summary  String?
+
+  status ReportStatus @default(GENERATING)
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

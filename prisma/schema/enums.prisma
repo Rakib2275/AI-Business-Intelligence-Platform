@@ -1,8 +1,8 @@
 enum Role {
   SUPER_ADMIN
   ADMIN
-  DOCTOR
-  PATIENT
+  COUSTOMER
+  SELLER
 }
 
 enum UserStatus {
@@ -81,4 +81,17 @@ enum NotificationType {
   SUCCESS
   WARNING
   ERROR
+}
+
+enum ReportStatus {
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+enum QueryStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  BLOCKED
 }

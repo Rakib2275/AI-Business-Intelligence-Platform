@@ -1,0 +1,14 @@
+model Embedding {
+  id           String @id @default(uuid())
+  metadataId   String
+
+  text     String
+  embedding Json
+  metadata Json?
+
+  tableMetadata TablesMetadata @relation(fields: [metadataId],references: [id],onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([metadataId])
+}

@@ -7,10 +7,9 @@ import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
 import { AuthRoutes } from "./app/module/auth/auth.route";
 import z, { success } from "zod";
-import { redisClient } from "./app/lib/redis";
-import crypto from "crypto"
 import { UserRoutes } from "./app/module/user/user.route";
 import { getBkashIdToken } from "./app/lib/bkash";
+import { businessDataRoute } from "./app/module/business-data/businessData.route";
 
 const app: Application = express();
 
@@ -30,6 +29,7 @@ app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/user",UserRoutes);
+app.use("/business-data",businessDataRoute);
 
 app.post("/zod",async (req: Request, res: Response,next: NextFunction) => {
 	try {

@@ -1,21 +1,15 @@
 model Conversation {
-  id          String @id @default(uuid())
-  workspaceId String
-  agentId     String
-  userId      String
+  id     String @id @default(uuid())
+  userId String
 
   title String?
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  agent     AIAgent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
 
   messages Message[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([workspaceId])
-  @@index([agentId])
   @@index([userId])
 }

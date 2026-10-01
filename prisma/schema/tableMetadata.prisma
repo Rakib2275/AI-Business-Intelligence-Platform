@@ -1,0 +1,16 @@
+model TablesMetadata {
+  id             String @id @default(uuid())
+  businessDataId String
+
+  tableName   String
+  description String?
+  columns     Json
+
+  businessData BusinessData @relation(fields: [businessDataId],references: [id],onDelete: Cascade)
+
+  embeddings Embedding[]
+
+  createdAt DateTime @default(now())
+
+  @@index([businessDataId])
+}
