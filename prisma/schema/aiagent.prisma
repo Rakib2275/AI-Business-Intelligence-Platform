@@ -1,0 +1,23 @@
+model AIAgent {
+  id          String      @id @default(uuid())
+  workspaceId String
+  modelId     String
+
+  name         String
+  description  String?
+  systemPrompt String?
+  temperature  Float       @default(0.7)
+  status       AgentStatus @default(ACTIVE)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  model     AIModel   @relation(fields: [modelId], references: [id])
+
+  conversations Conversation[]
+  usageRecords  UsageRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([modelId])
+}

@@ -1,0 +1,19 @@
+model Organization {
+  id        String             @id @default(uuid())
+  name      String
+  slug      String             @unique
+  logo      String?
+  status    OrganizationStatus @default(ACTIVE)
+
+  memberships   Membership[]
+  workspaces    Workspace[]
+  subscriptions Subscription[]
+//   apiKeys       APIKey[]
+  usageRecords  UsageRecord[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}

@@ -1,0 +1,20 @@
+model Document {
+  id          String         @id @default(uuid())
+  workspaceId String
+  uploadedBy  String
+
+  name     String
+  fileUrl  String
+  mimeType String?
+  size     Int?
+  status   DocumentStatus @default(PROCESSING)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [uploadedBy], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([uploadedBy])
+}

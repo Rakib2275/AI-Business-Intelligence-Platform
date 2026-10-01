@@ -1,0 +1,16 @@
+model Membership {
+  id             String @id @default(uuid())
+  userId         String
+  organizationId String
+
+  role MembershipRole @default(MEMBER)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
