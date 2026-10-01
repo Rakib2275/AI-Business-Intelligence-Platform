@@ -1,0 +1,24 @@
+model QueryHistory {
+  id             String @id @default(uuid())
+  userId         String
+  businessDataId String?
+
+  question      String
+  generatedSql  String?
+  resultSummary String?
+
+  executionTime Int?
+  status        QueryStatus @default(PENDING)
+
+  errorMessage String?
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  businessData BusinessData? @relation(fields: [businessDataId],references: [id],onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([businessDataId])
+  @@index([createdAt])
+}

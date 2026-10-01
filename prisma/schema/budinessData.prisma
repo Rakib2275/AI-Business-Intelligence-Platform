@@ -1,0 +1,24 @@
+model BusinessData {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  tableName   String
+  description String?
+  fileName    String?
+
+  // Uploaded/Imported business data
+  data        Json
+
+  rowCount    Int?
+  columnCount Int?
+
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metadata    TablesMetadata[]
+  queries     QueryHistory[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([tableName])
+}
