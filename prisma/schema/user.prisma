@@ -16,6 +16,13 @@ model User {
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
+  memberships   Membership[]
+  conversations Conversation[]
+  documents     Document[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  usageRecords  UsageRecord[]
+
   @@unique([email])
   @@map("users")
 }

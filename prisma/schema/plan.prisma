@@ -1,0 +1,20 @@
+model Plan {
+  id String @id @default(uuid())
+
+  name        String
+  description String?
+  price       Float
+//   billingCycle BillingCycle
+
+  maxUsers     Int
+  maxAgents    Int
+  maxDocuments Int
+  maxTokens    Int
+
+  isActive Boolean @default(true)
+
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

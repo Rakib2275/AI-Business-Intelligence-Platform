@@ -71,7 +71,7 @@ const verifyPatientEmail = catchAsync(async (req: Request, res: Response) => {
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,
 		success: true,
-		message: "Patient registered successfully",
+		message: "User Registered Successfully",
 		data: {
 			accessToken,
 			refreshToken,

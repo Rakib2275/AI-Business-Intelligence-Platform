@@ -1,0 +1,17 @@
+model Message {
+  id             String @id @default(uuid())
+  conversationId String
+
+  role    MessageRole
+  content String
+
+  inputTokens  Int?
+  outputTokens Int?
+  totalTokens  Int?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+}

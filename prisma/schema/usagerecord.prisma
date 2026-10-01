@@ -1,0 +1,27 @@
+model UsageRecord {
+  id             String @id @default(uuid())
+  organizationId String
+  workspaceId    String?
+  agentId        String?
+  modelId        String?
+  userId         String?
+
+  inputTokens  Int @default(0)
+  outputTokens Int @default(0)
+  totalTokens  Int @default(0)
+
+  cost Float @default(0)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspace    Workspace?    @relation(fields: [workspaceId], references: [id])
+  agent        AIAgent?      @relation(fields: [agentId], references: [id])
+  model        AIModel?      @relation(fields: [modelId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([workspaceId])
+  @@index([agentId])
+  @@index([createdAt])
+}
