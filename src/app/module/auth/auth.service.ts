@@ -1,28 +1,25 @@
 import bcrypt from "bcryptjs";
 import type { JwtPayload, SignOptions } from "jsonwebtoken";
-import { AuthProvider, Role, UserStatus } from "../../../generated/prisma/enums";
+import { Role, UserStatus } from "../../../generated/prisma/enums";
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
 import { jwtUtils } from "../../utils/jwt";
 import type {
 	IForgotPasswordPayload,
-	IGoogleLoginPayload,
 	ILoginUserPayload,
 	IRegisterPatientPayload,
 	IRequestUser,
 	IResetPasswordPayload,
 	IVerifyEmailPayload,
 } from "./auth.interface";
-import { OAuth2Client, TokenPayload } from "google-auth-library";
-import { googleClient } from "../../lib/googleAuth";
-import crypto from "crypto"
+import crypto from "node:crypto"
 import { redisClient } from "../../lib/redis";
 import { transporter } from "../../lib/nodeMailer";
 import ejs from "ejs"
-import path from "path";
+import path from "node:path";
 
 const registerPatient = async (payload: IRegisterPatientPayload) => {
-	const { name, password, patient : patientData } = payload;
+	const { name, password } = payload;
 	
 	const email = payload.email.trim().toLowerCase();
 
@@ -53,7 +50,6 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 		name,
 		email,
 		password: hashedPassword,
-		patient: patientData
 	}
 
 	await redisClient.set(
@@ -104,11 +100,7 @@ const verifyPatientEmail = async (payload : IVerifyEmailPayload) => {
 		throw new Error("User is Blocked")
 	}
 
-	if (isUserExist?.emailVerified) {
-		throw new Error("Email ALready Verified")
-	}
-
-	if (isUserExist?.isDeleted || isUserExist?.status === "DELETED") {
+	if (isUserExist?.status === UserStatus.DELETED) {
 		throw new Error("User is Deleted")
 	}
 
@@ -140,19 +132,11 @@ const verifyPatientEmail = async (payload : IVerifyEmailPayload) => {
 		data: {
 			name : patientPayload.name,
 			email : patientPayload.email,
-			password: patientPayload.password,
-			role: Role.PATIENT,
+            passwordHash: patientPayload.password,
+			role: Role.COUSTOMER,
 			status: UserStatus.ACTIVE,
-			emailVerified: true,
-			patient: {
-				create: {
-					name: patientPayload.name,
-					email: patientPayload.email, 
-					contactNumber: patientPayload?.patient?.contactNumber || "" },
-			},
 		},
-		omit: { password: true },
-		include: { patient: true },
+		select: { id: true, name: true, email: true, role: true, status: true },
 	});
 
 	await redisClient.del(patientRegistrationKey)
@@ -174,12 +158,11 @@ const verifyPatientEmail = async (payload : IVerifyEmailPayload) => {
 		html
 	})
 
-	const { patient, ...user } = createdUser;
 	const jwtPayload = {
-		userId: user.id,
-		name: user.name,
-		email: user.email,
-		role: user.role,
+		userId: createdUser.id,
+		name: createdUser.name,
+		email: createdUser.email,
+		role: createdUser.role,
 	};
 
 	const accessToken = jwtUtils.createToken(
@@ -195,8 +178,7 @@ const verifyPatientEmail = async (payload : IVerifyEmailPayload) => {
 	);
 
 	return {
-		user,
-		patient,
+		user: createdUser,
 		accessToken,
 		refreshToken,
 	};
@@ -220,11 +202,11 @@ const loginUser = async (payload: ILoginUserPayload) => {
 		throw new Error("User is blocked");
 	}
 
-	if (user.isDeleted || user.status === UserStatus.DELETED) {
+	if (user.status === UserStatus.DELETED) {
 		throw new Error("User is deleted");
 	}
 
-	const isPasswordMatched = await bcrypt.compare(password, user.password as string);
+	const isPasswordMatched = await bcrypt.compare(password, user.passwordHash);
 
 	if (!isPasswordMatched) {
 		throw new Error("Invalid credentials");
@@ -260,11 +242,14 @@ const getMe = async (user: IRequestUser) => {
 		where: {
 			id: user.userId,
 		},
-		include: {
-			patient: true,
-		},
-		omit: {
-			password: true,
+		select: {
+			id: true,
+			name: true,
+			email: true,
+			role: true,
+			status: true,
+			createdAt: true,
+			updatedAt: true,
 		},
 	});
 
@@ -295,7 +280,7 @@ const refreshToken = async (token: string) => {
 		where: { id: data.userId },
 	});
 
-	if (!user || user.isDeleted || user.status !== UserStatus.ACTIVE) {
+	if (!user || user.status !== UserStatus.ACTIVE) {
 		throw new Error("User is inactive or not found");
 	}
 
@@ -324,140 +309,6 @@ const refreshToken = async (token: string) => {
 	};
 };
 
-const googleLogin = async (payload:IGoogleLoginPayload ) =>{
-	let googleIdTokenPayload : TokenPayload | null | undefined= null;
-	try {
-		const ticket = await googleClient.verifyIdToken({
-			idToken: payload.idToken,
-			audience : config.google_client_id
-		})
-
-		googleIdTokenPayload = ticket.getPayload()
-	} catch (error) {
-		console.log("Google ID Token Verification Failed",error);
-		throw new Error("Invalid or Expireed Google Id Token")
-	}
-
-	if(!googleIdTokenPayload){
-		throw new Error("Invalid or Expired Google id Token")
-	}
-
-	if(!googleIdTokenPayload.email){
-		throw new Error("Google Email Not Found")
-	}
-	const ifPatientExistWithGoogleAuth = await prisma.user.findUnique({
-		where:{
-			email : googleIdTokenPayload.email,
-			role : Role.PATIENT,
-			googleId : googleIdTokenPayload.sub
-		}
-	})
-
-	let user = ifPatientExistWithGoogleAuth;
-
-	if(!ifPatientExistWithGoogleAuth){
-		const ifPatientExistWithCredentials = await prisma.user.findUnique({
-			where : {
-				email: googleIdTokenPayload.email,
-				role: Role.PATIENT,
-				authProvider : AuthProvider.CREDENTIALS
-			}
-		})
-		if(ifPatientExistWithCredentials){
-			if(!ifPatientExistWithCredentials.emailVerified){
-				throw new Error("Email Not Verified");
-			}
-			if(ifPatientExistWithCredentials?.status === UserStatus.BLOCKED){
-				throw new Error("User is Blocked")
-			}
-
-			if(ifPatientExistWithCredentials.isDeleted || ifPatientExistWithCredentials.status === UserStatus.DELETED){
-				throw new Error("User is Deleted")
-			}
-
-			user = await prisma.user.update({
-				where : {
-					id : ifPatientExistWithCredentials.id
-				},
-				data : {
-					googleId : googleIdTokenPayload.sub
-				}
-			})
-		}else{
-			user = await prisma.user.create({
-			data:{
-				name : googleIdTokenPayload.name as string,
-				email : googleIdTokenPayload.email,
-				role : Role.PATIENT,
-				googleId: googleIdTokenPayload.sub,
-				authProvider : AuthProvider.GOOGLE,
-				emailVerified : true,
-				patient:{
-					create:{
-						name: googleIdTokenPayload.name as string,
-						email: googleIdTokenPayload.email
-					}
-				}
-			}
-		})
-		const tempatePath = path.join(process.cwd(), "src/app/templates/patient-welcome-email.ejs")
-
-	const templateData = {
-		name : user.name
-
-	}
-
-	const html = await ejs.renderFile(tempatePath, templateData)
-
-	await transporter.sendMail({
-		from: config.email_sender,
-		to: user.email,
-		subject: "Email Verification",
-		// text : `Your OTP is ${otp}`
-		// html: `<h1>Your OTP is ${otp}</h1>`
-		html
-	})
-		}
-	}
-
-	if(!user){
-		throw new Error("User Not Found")
-	}
-
-	if(user?.status === UserStatus.BLOCKED){
-		throw new Error("User is Blocked")
-	}
-
-	if(user.isDeleted || user.status === UserStatus.DELETED){
-		throw new Error("User is Deleted")
-	}
-
-	const jwtPayload = {
-		userId: user.id,
-		name: user.name,
-		email: user.email,
-		role: user.role,
-	};
-
-	const accessToken = jwtUtils.createToken(
-		jwtPayload,
-		config.jwt_access_secret,
-		config.jwt_access_expires_in as SignOptions,
-	);
-
-	const refreshToken = jwtUtils.createToken(
-		jwtPayload,
-		config.jwt_refresh_secret,
-		config.jwt_refresh_expires_in as SignOptions,
-	);
-
-	return {
-		accessToken,
-		refreshToken,
-	};
-
-}
-
 const forgotPassword = async(payload : IForgotPasswordPayload) =>{
 	const {email} = payload;
 
@@ -475,16 +326,8 @@ const forgotPassword = async(payload : IForgotPasswordPayload) =>{
 		throw new Error("User is Blocked")
 	}
 
-	if(!isUserExists.emailVerified){
-		throw new Error("User is Blocked")
-	}
-
-	if(isUserExists.isDeleted || isUserExists.status === "DELETED"){
+	if(isUserExists.status === UserStatus.DELETED){
 		throw new Error("User is Deleted")
-	}
-
-	if(isUserExists.googleId && isUserExists.authProvider === "GOOGLE"){
-		throw new Error("User Has Account With Google")
 	}
 
 	const otp = crypto.randomInt(100000,1000000).toString();
@@ -535,16 +378,8 @@ const resetPassword =async (payload : IResetPasswordPayload) =>{
 		throw new Error("User is Blocked")
 	}
 
-	if(!isUserExists.emailVerified){
-		throw new Error("User is Blocked")
-	}
-
-	if(isUserExists.isDeleted || isUserExists.status === "DELETED"){
+	if(isUserExists.status === UserStatus.DELETED){
 		throw new Error("User is Deleted")
-	}
-
-	if(isUserExists.googleId && isUserExists.authProvider === "GOOGLE"){
-		throw new Error("User Has Account With Google")
 	}
 
 	const key = `forgot-password-otp:${isUserExists.email}`
@@ -566,7 +401,7 @@ const resetPassword =async (payload : IResetPasswordPayload) =>{
 			email : isUserExists.email
 		},
 		data:{
-			password : hashedNewPassword
+			passwordHash : hashedNewPassword
 		}
 	})
 
@@ -594,7 +429,6 @@ export const AuthService = {
 	loginUser,
 	getMe,
 	refreshToken,
-	googleLogin,
 	forgotPassword,
 	resetPassword
 };
