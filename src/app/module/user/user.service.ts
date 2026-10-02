@@ -1,5 +1,4 @@
-import { UploadApiResponse } from "cloudinary"
-import { Prisma } from "../../../generated/prisma/client"
+import type { UploadApiResponse } from "cloudinary"
 import { cloudinary } from "../../lib/cloudinry"
 import { prisma } from "../../lib/prisma"
 
@@ -68,7 +67,7 @@ const uploadProfileImage = async (buffer : Buffer,userId : string) =>{
                    imagePublicId : cloudinaryResult?.public_id 
                 },
                 omit :{
-                    password : true
+                        passwordHash : true
                 }
             })
             if(currentUser?.imagePublicId && currentUser.imageUrl){

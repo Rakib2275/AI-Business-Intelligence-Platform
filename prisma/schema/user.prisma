@@ -3,6 +3,8 @@ model User {
   name         String
   email        String     @unique
   passwordHash String
+  imageUrl     String     @default("")
+  imagePublicId String    @default("")
   role         Role   @default(COUSTOMER)
   status       UserStatus @default(ACTIVE)
 

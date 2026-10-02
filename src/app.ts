@@ -1,15 +1,16 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express, { NextFunction, type Application, type Request, type Response } from "express";
+import express, { type Application, type Response } from "express";
 import httpStatus from "http-status";
 import config from "./app/config";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
 import { AuthRoutes } from "./app/module/auth/auth.route";
-import z, { success } from "zod";
 import { UserRoutes } from "./app/module/user/user.route";
-import { getBkashIdToken } from "./app/lib/bkash";
 import { businessDataRoute } from "./app/module/business-data/businessData.route";
+import { queryRoute } from "./app/module/query/query.route";
+import { analyticsRoute } from "./app/module/analytics/analytics.route";
+import { reportRoute } from "./app/module/report/report.route";
 
 const app: Application = express();
 
@@ -28,59 +29,14 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
-app.use("/api/v1/user",UserRoutes);
-app.use("/business-data",businessDataRoute);
+app.use("/api/v1/user", UserRoutes);
+app.use("/api/v1/business-data", businessDataRoute);
+app.use("/business-data", businessDataRoute);
+app.use("/api/v1/query", queryRoute);
+app.use("/api/v1/analytics", analyticsRoute);
+app.use("/api/v1/reports", reportRoute);
 
-app.post("/zod",async (req: Request, res: Response,next: NextFunction) => {
-	try {
-		const UserZodSchema = z.object({
-		name : z.string(),
-		age : z.number(),
-		isVerified : z.boolean(),
-		books : z.array(z.string())
-	})
-	const payload = req.body;
-
-	const result = UserZodSchema.safeParse(payload)
-
-	
-
-	res.status(httpStatus.OK).json({
-		success : true,
-		message : "Welcome to AI-Powered Business Intelligence Platform",
-		data : result
-	})
-	} catch (error) {
-		console.log(error)
-		next(error);
-
-	}
-})
-
-app.get("/test",async (req: Request, res: Response,next: NextFunction) => {
-	try {
-		// const otp = crypto.randomInt(100000,1000000)
-
-		const grantIdTokenResult = await getBkashIdToken()
-
-		console.log(grantIdTokenResult)
-
-		
-		res.status(httpStatus.OK).json({
-			success : true,
-			message : " AI-Powered Business Intelligence Platform",
-			data : null
-		})
-	} catch (error) {
-		console.log(error)
-		next(error);
-
-	}
-})
-
-
-// Basic route
-app.get("/", async (req: Request, res: Response) => {
+app.get("/", (_req, res: Response) => {
 	res.status(httpStatus.OK).json({
 		success: true,
 		message: " AI-Powered Business Intelligence Platform Backend",
