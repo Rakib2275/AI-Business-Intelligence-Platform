@@ -125,6 +125,28 @@ Login, logout, user creation, business-data changes, query execution/rejection,
 conversation/message changes, analytics, report generation/export, and dashboard
 operations are recorded.
 
+### Frontend
+
+The standalone Next.js application lives in `frontend/` and communicates with
+the API through a same-origin rewrite. This keeps the access and refresh tokens
+in HTTP-only cookies rather than browser storage.
+
+```sh
+# Terminal 1: run the backend
+pnpm dev
+
+# Terminal 2: run the frontend
+pnpm --dir frontend install
+pnpm frontend:dev
+```
+
+The frontend expects the backend at `http://localhost:8000` by default. Override
+`BACKEND_API_URL` in `frontend/.env.local` if it is running elsewhere. Set
+`FRONTEND_URL` in the backend environment to `http://localhost:3000`. The app
+includes a sign-in page, data overview, contextual conversations, saved
+dashboards/widgets, and an administrator-only audit browser; role restrictions
+and record ownership continue to be enforced by the backend.
+
 ### Prisma and tests
 
 The active BI Prisma schema is split across `prisma/schema/*.prisma`. Validate it

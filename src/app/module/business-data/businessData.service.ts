@@ -184,8 +184,15 @@ const getAllBusinessData = async (
         userId,
       },
 
-      include: {
-        metadata: true,
+      select: {
+        id: true,
+        name: true,
+        tableName: true,
+        description: true,
+        rowCount: true,
+        columnCount: true,
+        createdAt: true,
+        updatedAt: true,
       },
 
       orderBy: {
