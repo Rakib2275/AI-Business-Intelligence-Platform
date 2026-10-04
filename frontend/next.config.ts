@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
 	experimental: {
 		cpus: 1,
 	},
+	webpack(config, { dev }) {
+		if (dev) config.cache = false;
+		return config;
+	},
 	async rewrites() {
 		return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
 	},

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
 	ArrowRight,
@@ -180,6 +181,9 @@ export default function LoginPage() {
 					<div className="login-security">
 						<LockKeyhole size={14} /> Protected with secure, httpOnly session
 						cookies
+					</div>
+					<div className="register-login-link">
+						New to Northstar? <Link href="/register">Create an account</Link>
 					</div>
 				</div>
 				<div className="login-footnote">
