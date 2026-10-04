@@ -17,6 +17,9 @@ import { redisClient } from "../../lib/redis";
 import { transporter } from "../../lib/nodeMailer";
 import ejs from "ejs"
 import path from "node:path";
+import { AppError } from "../../utils/appError";
+import type { AuditRequestContext } from "../audit/audit.service";
+import { auditService } from "../audit/audit.service";
 
 const registerPatient = async (payload: IRegisterPatientPayload) => {
 	const { name, password } = payload;
@@ -87,7 +90,10 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 	
 };
 
-const verifyPatientEmail = async (payload : IVerifyEmailPayload) => {
+const verifyPatientEmail = async (
+	payload: IVerifyEmailPayload,
+	context: AuditRequestContext = {},
+) => {
 
 	const otp = payload.otp;
 	const email = payload.email.trim().toLowerCase();
@@ -138,6 +144,16 @@ const verifyPatientEmail = async (payload : IVerifyEmailPayload) => {
 		},
 		select: { id: true, name: true, email: true, role: true, status: true },
 	});
+	await auditService.log({
+		userId: createdUser.id,
+		action: "USER_CREATED",
+		category: "USER",
+		resourceType: "User",
+		resourceId: createdUser.id,
+		description: "User account created after email verification.",
+		metadata: { role: createdUser.role },
+		...context,
+	});
 
 	await redisClient.del(patientRegistrationKey)
 
@@ -186,7 +202,10 @@ const verifyPatientEmail = async (payload : IVerifyEmailPayload) => {
 }
 
 
-const loginUser = async (payload: ILoginUserPayload) => {
+const loginUser = async (
+	payload: ILoginUserPayload,
+	context: AuditRequestContext = {},
+) => {
 	const { password } = payload;
 	const email = payload.email.trim().toLowerCase();
 
@@ -195,22 +214,64 @@ const loginUser = async (payload: ILoginUserPayload) => {
 	});
 
 	if (!user) {
-		throw new Error("User not found");
+		await auditService.log({
+			action: "LOGIN_FAILED",
+			category: "AUTH",
+			status: "FAILURE",
+			description: "Sign-in failed.",
+			metadata: { reason: "INVALID_CREDENTIALS" },
+			...context,
+		});
+		throw new AppError("Invalid email or password.", 401);
 	}
 
 	if (user.status === UserStatus.BLOCKED) {
-		throw new Error("User is blocked");
+		await auditService.log({
+			userId: user.id,
+			action: "LOGIN_FAILED",
+			category: "AUTH",
+			status: "REJECTED",
+			description: "Sign-in denied for an inactive account.",
+			...context,
+		});
+		throw new AppError("Unable to sign in with this account.", 403);
 	}
 
 	if (user.status === UserStatus.DELETED) {
-		throw new Error("User is deleted");
+		await auditService.log({
+			userId: user.id,
+			action: "LOGIN_FAILED",
+			category: "AUTH",
+			status: "REJECTED",
+			description: "Sign-in denied for an inactive account.",
+			...context,
+		});
+		throw new AppError("Unable to sign in with this account.", 403);
 	}
 
 	const isPasswordMatched = await bcrypt.compare(password, user.passwordHash);
 
 	if (!isPasswordMatched) {
-		throw new Error("Invalid credentials");
+		await auditService.log({
+			userId: user.id,
+			action: "LOGIN_FAILED",
+			category: "AUTH",
+			status: "FAILURE",
+			description: "Sign-in failed.",
+			metadata: { reason: "INVALID_CREDENTIALS" },
+			...context,
+		});
+		throw new AppError("Invalid email or password.", 401);
 	}
+	await auditService.log({
+		userId: user.id,
+		action: "LOGIN_SUCCEEDED",
+		category: "AUTH",
+		resourceType: "User",
+		resourceId: user.id,
+		description: "User signed in.",
+		...context,
+	});
 
 	const jwtPayload = {
 		userId: user.id,
@@ -404,6 +465,14 @@ const resetPassword =async (payload : IResetPasswordPayload) =>{
 			passwordHash : hashedNewPassword
 		}
 	})
+	await auditService.log({
+		userId: isUserExists.id,
+		action: "PASSWORD_RESET",
+		category: "AUTH",
+		resourceType: "User",
+		resourceId: isUserExists.id,
+		description: "User password reset completed.",
+	});
 
 	await redisClient.del([key])
 

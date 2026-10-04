@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { analyticsService } from "./analytics.service";
+import { getAuditRequestContext } from "../audit/audit.service";
 
 const forecast = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId;
@@ -13,6 +14,7 @@ const forecast = catchAsync(async (req: Request, res: Response) => {
 		req.body.dateColumn,
 		req.body.valueColumn,
 		req.body.periods,
+		getAuditRequestContext(req),
 	);
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
@@ -29,6 +31,7 @@ const detectAnomalies = catchAsync(async (req: Request, res: Response) => {
 		userId,
 		req.body.datasetId,
 		req.body.valueColumn,
+		getAuditRequestContext(req),
 	);
 	sendResponse(res, {
 		statusCode: httpStatus.OK,

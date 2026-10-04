@@ -3,13 +3,14 @@ model Conversation {
   userId String
 
   title String?
+  status ConversationStatus @default(ACTIVE)
 
-  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   messages Message[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([userId, updatedAt])
 }

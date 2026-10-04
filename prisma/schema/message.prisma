@@ -1,13 +1,18 @@
 model Message {
   id             String @id @default(uuid())
   conversationId String
+  queryId        String?
 
-  role    MessageRole
-  content String
+  role        MessageRole
+  messageType MessageType @default(TEXT)
+  content     String
+  metadata    Json?
 
-  conversation Conversation @relation(fields: [conversationId],references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  query        QueryHistory? @relation(fields: [queryId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
-  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([queryId])
 }

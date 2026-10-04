@@ -1,6 +1,8 @@
 import PDFDocument from "pdfkit";
 import { QueryStatus, ReportStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
+import type { AuditRequestContext } from "../audit/audit.service";
+import { auditService } from "../audit/audit.service";
 
 const createPdf = (title: string, summary: string) =>
 	new Promise<Buffer>((resolve, reject) => {
@@ -28,7 +30,12 @@ const buildSummary = (
 		`${index + 1}. ${query.question}\n${query.resultSummary || "No summary was saved."}`,
 	).join("\n\n");
 
-const createReport = async (userId: string, title: string, queryIds?: string[]) => {
+const createReport = async (
+	userId: string,
+	title: string,
+	queryIds?: string[],
+	context: AuditRequestContext = {},
+) => {
 	const queries = await prisma.queryHistory.findMany({
 		where: {
 			userId,
@@ -47,23 +54,15 @@ const createReport = async (userId: string, title: string, queryIds?: string[]) 
 	const report = await prisma.report.create({
 		data: { userId, title, status: ReportStatus.GENERATING },
 	});
+	let completedReport: Awaited<ReturnType<typeof prisma.report.update>>;
+	let pdf: Buffer;
 	try {
 		const summary = buildSummary(queries);
-		const pdf = await createPdf(title, summary);
-		const completedReport = await prisma.report.update({
+		pdf = await createPdf(title, summary);
+		completedReport = await prisma.report.update({
 			where: { id: report.id },
 			data: { summary, status: ReportStatus.COMPLETED },
 		});
-		await prisma.auditLog.create({
-			data: {
-				userId,
-				action: "REPORT_GENERATED",
-				resource: "Report",
-				resourceId: report.id,
-				metadata: { queryCount: queries.length },
-			},
-		});
-		return { report: completedReport, pdf };
 	} catch (error) {
 		await prisma.report.update({
 			where: { id: report.id },
@@ -71,14 +70,48 @@ const createReport = async (userId: string, title: string, queryIds?: string[]) 
 		});
 		throw error;
 	}
+	await auditService.log({
+		userId,
+		action: "REPORT_GENERATED",
+		category: "REPORT",
+		resourceType: "Report",
+		resourceId: report.id,
+		description: "AI report generated.",
+		metadata: { queryCount: queries.length },
+		...context,
+	});
+	await auditService.log({
+		userId,
+		action: "REPORT_EXPORTED",
+		category: "REPORT",
+		resourceType: "Report",
+		resourceId: report.id,
+		description: "Generated report exported as PDF.",
+		...context,
+	});
+	return { report: completedReport, pdf };
 };
 
-const downloadReport = async (userId: string, id: string) => {
+const downloadReport = async (
+	userId: string,
+	id: string,
+	context: AuditRequestContext = {},
+) => {
 	const report = await prisma.report.findFirst({ where: { id, userId } });
 	if (!report || report.status !== ReportStatus.COMPLETED || !report.summary) {
 		throw new Error("Report not found.");
 	}
-	return { report, pdf: await createPdf(report.title, report.summary) };
+	const pdf = await createPdf(report.title, report.summary);
+	await auditService.log({
+		userId,
+		action: "REPORT_EXPORTED",
+		category: "REPORT",
+		resourceType: "Report",
+		resourceId: report.id,
+		description: "Saved report exported as PDF.",
+		...context,
+	});
+	return { report, pdf };
 };
 
 export const reportService = { createReport, downloadReport };

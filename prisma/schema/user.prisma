@@ -11,6 +11,7 @@ model User {
   queryHistory QueryHistory[]
   reports      Report[]
   conversations Conversation[]
+  dashboards   Dashboard[]
   memberships   Membership[]
   documents     Document[]
   businessData BusinessData[]
