@@ -6,7 +6,13 @@ import type { IRequestUser } from "./auth.interface";
 import { AuthService } from "./auth.service";
 import { getAuditRequestContext, auditService } from "../audit/audit.service";
 import { AppError } from "../../utils/appError";
+import config from "../../config";
 
+const authCookieOptions = {
+	httpOnly: true,
+	secure: config.node_env === "production",
+	sameSite: "lax" as const,
+};
 
 
 const registerPatient = catchAsync(async (req: Request, res: Response) => {
@@ -56,15 +62,11 @@ const verifyPatientEmail = catchAsync(async (req: Request, res: Response) => {
 	const { accessToken, refreshToken, user } = result;
 
 	res.cookie("accessToken", accessToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
+		...authCookieOptions,
 		maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
 	});
 	res.cookie("refreshToken", refreshToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
+		...authCookieOptions,
 		maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
 	});
 
@@ -86,15 +88,11 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 	const { accessToken, refreshToken } = result;
 
 	res.cookie("accessToken", accessToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
+		...authCookieOptions,
 		maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
 	});
 	res.cookie("refreshToken", refreshToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
+		...authCookieOptions,
 		maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
 	});
 
@@ -121,8 +119,8 @@ const logout = catchAsync(async (req: Request, res: Response) => {
 		description: "User signed out.",
 		...getAuditRequestContext(req),
 	});
-	res.clearCookie("accessToken");
-	res.clearCookie("refreshToken");
+	res.clearCookie("accessToken", authCookieOptions);
+	res.clearCookie("refreshToken", authCookieOptions);
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
@@ -155,15 +153,11 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
 	const { accessToken, refreshToken: newRefreshToken } = result;
 
 	res.cookie("accessToken", accessToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
+		...authCookieOptions,
 		maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
 	});
 	res.cookie("refreshToken", newRefreshToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
+		...authCookieOptions,
 		maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
 	});
 
