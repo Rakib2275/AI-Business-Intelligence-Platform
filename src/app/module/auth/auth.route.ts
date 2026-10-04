@@ -18,6 +18,7 @@ router.post("/verify-email",
 router.post("/login",
 	validedRequest(LoginZodSchema),
 	AuthController.loginUser);
+router.post("/logout", auth(), AuthController.logout);
 router.get(
 	"/me",
 		auth(Role.ADMIN, Role.COUSTOMER, Role.SELLER, Role.SUPER_ADMIN),

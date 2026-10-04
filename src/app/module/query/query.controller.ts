@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { queryService } from "./query.service";
+import { getAuditRequestContext } from "../audit/audit.service";
 
 const runQuery = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId;
@@ -13,6 +14,7 @@ const runQuery = catchAsync(async (req: Request, res: Response) => {
 		req.body.datasetId,
 		req.body.question,
 		req.body.conversationId,
+		getAuditRequestContext(req),
 	);
 	sendResponse(res, {
 		statusCode: httpStatus.OK,

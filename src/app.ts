@@ -11,6 +11,9 @@ import { businessDataRoute } from "./app/module/business-data/businessData.route
 import { queryRoute } from "./app/module/query/query.route";
 import { analyticsRoute } from "./app/module/analytics/analytics.route";
 import { reportRoute } from "./app/module/report/report.route";
+import { auditRoute } from "./app/module/audit/audit.route";
+import { conversationRoute } from "./app/module/conversation/conversation.route";
+import { dashboardRoute } from "./app/module/dashboard/dashboard.route";
 
 const app: Application = express();
 
@@ -35,6 +38,9 @@ app.use("/business-data", businessDataRoute);
 app.use("/api/v1/query", queryRoute);
 app.use("/api/v1/analytics", analyticsRoute);
 app.use("/api/v1/reports", reportRoute);
+app.use("/api/v1/audit", auditRoute);
+app.use("/api/v1/conversations", conversationRoute);
+app.use("/api/v1/dashboards", dashboardRoute);
 
 app.get("/", (_req, res: Response) => {
 	res.status(httpStatus.OK).json({

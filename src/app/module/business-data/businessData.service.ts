@@ -6,6 +6,8 @@ import {
   createBusinessDataSchema,
   updateBusinessDataSchema,
 } from "./businessData.validation";
+import type { AuditRequestContext } from "../audit/audit.service";
+import { auditService } from "../audit/audit.service";
 
 
 // ======================================================
@@ -103,7 +105,8 @@ const detectColumnType = (values: unknown[]): string => {
 
 const createBusinessData = async (
   userId: string,
-  payload: unknown
+  payload: unknown,
+  context: AuditRequestContext = {},
 ) => {
 
   const validatedData =
@@ -153,6 +156,16 @@ const createBusinessData = async (
     });
 
 
+  await auditService.log({
+    userId,
+    action: "BUSINESS_DATA_CREATED",
+    category: "DATA",
+    resourceType: "BusinessData",
+    resourceId: businessData.id,
+    description: "Business dataset created.",
+    metadata: { name: businessData.name, tableName: businessData.tableName },
+    ...context,
+  });
   return businessData;
 };
 
@@ -225,7 +238,8 @@ const getSingleBusinessData = async (
 const updateBusinessData = async (
   userId: string,
   id: string,
-  payload: unknown
+  payload: unknown,
+  context: AuditRequestContext = {},
 ) => {
 
   const validatedData =
@@ -307,6 +321,16 @@ const updateBusinessData = async (
     });
 
 
+  await auditService.log({
+    userId,
+    action: "BUSINESS_DATA_UPDATED",
+    category: "DATA",
+    resourceType: "BusinessData",
+    resourceId: id,
+    description: "Business dataset updated.",
+    metadata: { changedFields: Object.keys(validatedData) },
+    ...context,
+  });
   return updated;
 };
 
@@ -317,7 +341,8 @@ const updateBusinessData = async (
 
 const deleteBusinessData = async (
   userId: string,
-  id: string
+  id: string,
+  context: AuditRequestContext = {},
 ) => {
 
   // Check ownership
@@ -343,6 +368,16 @@ const deleteBusinessData = async (
     },
   });
 
+  await auditService.log({
+    userId,
+    action: "BUSINESS_DATA_DELETED",
+    category: "DATA",
+    resourceType: "BusinessData",
+    resourceId: id,
+    description: "Business dataset deleted.",
+    metadata: { name: existing.name, tableName: existing.tableName },
+    ...context,
+  });
 
   return null;
 };
@@ -356,7 +391,8 @@ const uploadBusinessData = async (
   userId: string,
   file: Express.Multer.File,
   name: string,
-  description?: string
+  description?: string,
+  context: AuditRequestContext = {},
 ) => {
 
   // --------------------------------------------------
@@ -595,6 +631,20 @@ const uploadBusinessData = async (
     });
 
 
+  await auditService.log({
+    userId,
+    action: "BUSINESS_DATA_UPLOADED",
+    category: "DATA",
+    resourceType: "BusinessData",
+    resourceId: businessData.id,
+    description: "Business dataset uploaded.",
+    metadata: {
+      fileName: file.originalname,
+      rowCount: rows.length,
+      columnCount: columns.length,
+    },
+    ...context,
+  });
   return businessData;
 };
 

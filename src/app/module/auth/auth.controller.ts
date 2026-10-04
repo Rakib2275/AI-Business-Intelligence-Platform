@@ -4,6 +4,8 @@ import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import type { IRequestUser } from "./auth.interface";
 import { AuthService } from "./auth.service";
+import { getAuditRequestContext, auditService } from "../audit/audit.service";
+import { AppError } from "../../utils/appError";
 
 
 
@@ -49,7 +51,7 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
 const verifyPatientEmail = catchAsync(async (req: Request, res: Response) => {
 	
 	const payload = req.body; 
-	const result = await AuthService.verifyPatientEmail(payload);
+	const result = await AuthService.verifyPatientEmail(payload, getAuditRequestContext(req));
 
 	const { accessToken, refreshToken, user } = result;
 
@@ -80,7 +82,7 @@ const verifyPatientEmail = catchAsync(async (req: Request, res: Response) => {
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
 	const payload = req.body;
-	const result = await AuthService.loginUser(payload);
+	const result = await AuthService.loginUser(payload, getAuditRequestContext(req));
 	const { accessToken, refreshToken } = result;
 
 	res.cookie("accessToken", accessToken, {
@@ -104,6 +106,28 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 			accessToken,
 			refreshToken,
 		},
+	});
+});
+
+const logout = catchAsync(async (req: Request, res: Response) => {
+	const userId = req.user?.userId;
+	if (!userId) throw new AppError("Authentication required.", httpStatus.UNAUTHORIZED);
+	await auditService.log({
+		userId,
+		action: "LOGOUT",
+		category: "AUTH",
+		resourceType: "User",
+		resourceId: userId,
+		description: "User signed out.",
+		...getAuditRequestContext(req),
+	});
+	res.clearCookie("accessToken");
+	res.clearCookie("refreshToken");
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "User logged out successfully.",
+		data: null,
 	});
 });
 
@@ -186,6 +210,7 @@ export const AuthController = {
 	registerPatient,
 	verifyPatientEmail,
 	loginUser,
+	logout,
 	getMe,
 	refreshToken,
 	forgotPassword,

@@ -3,6 +3,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { userService } from "./user.service";
+import { getAuditRequestContext } from "../audit/audit.service";
 
 const uploadProfileImage = catchAsync(async (req: Request, res: Response) => {
     console.log(req.file, "req.file");
@@ -12,7 +13,7 @@ const uploadProfileImage = catchAsync(async (req: Request, res: Response) => {
 
 	const userId = req.user?.userId;
 
-	const result = await userService.uploadProfileImage(req.file?.buffer,userId!)
+	const result = await userService.uploadProfileImage(req.file.buffer,userId!,getAuditRequestContext(req))
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,

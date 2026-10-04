@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ZodError } from "zod";
 
 import { businessDataService } from "./businessData.service";
+import { getAuditRequestContext } from "../audit/audit.service";
 
 const getUserId = (req: Request) => {
   const userId = req.user?.userId;
@@ -38,7 +39,8 @@ const createBusinessData = async (
     const result =
       await businessDataService.createBusinessData(
         userId,
-        req.body
+        req.body,
+        getAuditRequestContext(req),
       );
 
     res.status(201).json({
@@ -161,7 +163,8 @@ const updateBusinessData = async (
       await businessDataService.updateBusinessData(
         userId,
         id,
-        req.body
+        req.body,
+        getAuditRequestContext(req),
       );
 
     res.status(200).json({
@@ -207,7 +210,8 @@ const deleteBusinessData = async (
 
     await businessDataService.deleteBusinessData(
       userId,
-      id
+      id,
+      getAuditRequestContext(req),
     );
 
     res.status(200).json({
@@ -266,7 +270,8 @@ const uploadBusinessData = async (
         userId,
         file,
         name,
-        description
+        description,
+        getAuditRequestContext(req),
       );
 
 

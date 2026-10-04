@@ -1,5 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { calculateForecast, findAnomalies, type DataRow } from "./analytics.math";
+import type { AuditRequestContext } from "../audit/audit.service";
+import { auditService } from "../audit/audit.service";
 
 const getDatasetRows = async (userId: string, datasetId: string): Promise<DataRow[]> => {
 	const dataset = await prisma.businessData.findFirst({
@@ -21,32 +23,40 @@ const forecast = async (
 	dateColumn: string,
 	valueColumn: string,
 	periods: number,
+	context: AuditRequestContext = {},
 ) => {
 	const rows = await getDatasetRows(userId, datasetId);
 	const result = calculateForecast(rows, dateColumn, valueColumn, periods);
-	await prisma.auditLog.create({
-		data: {
-			userId,
-			action: "FORECAST_GENERATED",
-			resource: "BusinessData",
-			resourceId: datasetId,
-			metadata: { dateColumn, valueColumn, periods },
-		},
+	await auditService.log({
+		userId,
+		action: "FORECAST_GENERATED",
+		category: "AI",
+		resourceType: "BusinessData",
+		resourceId: datasetId,
+		description: "Business data forecast generated.",
+		metadata: { dateColumn, valueColumn, periods },
+		...context,
 	});
 	return result;
 };
 
-const detectAnomalies = async (userId: string, datasetId: string, valueColumn: string) => {
+const detectAnomalies = async (
+	userId: string,
+	datasetId: string,
+	valueColumn: string,
+	context: AuditRequestContext = {},
+) => {
 	const rows = await getDatasetRows(userId, datasetId);
 	const result = findAnomalies(rows, valueColumn);
-	await prisma.auditLog.create({
-		data: {
-			userId,
-			action: "ANOMALIES_DETECTED",
-			resource: "BusinessData",
-			resourceId: datasetId,
-			metadata: { valueColumn, anomalyCount: result.anomalies.length },
-		},
+	await auditService.log({
+		userId,
+		action: "ANOMALIES_DETECTED",
+		category: "AI",
+		resourceType: "BusinessData",
+		resourceId: datasetId,
+		description: "Business data anomaly detection completed.",
+		metadata: { valueColumn, anomalyCount: result.anomalies.length },
+		...context,
 	});
 	return result;
 };

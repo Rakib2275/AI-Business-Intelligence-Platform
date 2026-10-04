@@ -5,6 +5,7 @@ import config from "../config";
 import { prisma } from "../lib/prisma";
 import { catchAsync } from "../utils/catchAsync";
 import { jwtUtils } from "../utils/jwt";
+import { AppError } from "../utils/appError";
 
 declare global {
 	namespace Express {
@@ -22,7 +23,7 @@ declare global {
 // auth(Role.ADMIN, Role.USER, Role.Author)
 // auth() => ...requiredRoles => [Role.ADMIN, Role.USER, Role.AUTHOR]
 export const auth = (...requiredRoles: Role[]) => {
-	return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	return catchAsync(async (req: Request, _res: Response, next: NextFunction) => {
 		const token = req.cookies.accessToken
 			? req.cookies.accessToken
 			: req.headers.authorization?.startsWith("Bearer ")
@@ -30,22 +31,24 @@ export const auth = (...requiredRoles: Role[]) => {
 				: req.headers.authorization;
 
 		if (!token) {
-			throw new Error(
+			throw new AppError(
 				"You are not logged in. Please log in to access this resource.",
+				401,
 			);
 		}
 
 		const verifiedToken = jwtUtils.verifyToken(token, config.jwt_access_secret);
 
 		if (!verifiedToken.success) {
-			throw new Error(verifiedToken.error);
+			throw new AppError("Invalid or expired access token.", 401);
 		}
 
 		const { email, name, userId, role } = verifiedToken.data as JwtPayload;
 
 		if (requiredRoles.length && !requiredRoles.includes(role)) {
-			throw new Error(
+			throw new AppError(
 				"Forbidden. You don't have permission to access this resource.",
+				403,
 			);
 		}
 
@@ -59,11 +62,11 @@ export const auth = (...requiredRoles: Role[]) => {
 		});
 
 		if (!user) {
-			throw new Error("User not found. Please log in again.");
+			throw new AppError("User not found. Please log in again.", 401);
 		}
 
-		if (user.status === "BLOCKED") {
-			throw new Error("Your account has been blocked. Please contact support.");
+		if (user.status === "BLOCKED" || user.status === "DELETED") {
+			throw new AppError("Your account is inactive. Please contact support.", 403);
 		}
 
 		req.user = {

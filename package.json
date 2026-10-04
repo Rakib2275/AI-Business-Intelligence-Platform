@@ -7,7 +7,7 @@
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
         "start": "node dist/src/server.js",
-        "test": "node --import tsx --test src/app/module/query/query.sql.test.ts src/app/module/analytics/analytics.math.test.ts",
+        "test": "node --import tsx --test src/app/module/query/query.sql.test.ts src/app/module/query/query.chart.test.ts src/app/module/analytics/analytics.math.test.ts src/app/module/audit/audit.validation.test.ts src/app/module/conversation/conversation.validation.test.ts src/app/module/conversation/conversation.context.test.ts src/app/module/dashboard/dashboard.validation.test.ts",
         "format:check": "npx @biomejs/biome format ./src",
         "format:fix": "npx @biomejs/biome format --write ./src",
         "lint:check": "npx @biomejs/biome lint ./src",

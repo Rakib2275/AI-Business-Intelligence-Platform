@@ -70,6 +70,80 @@ Charts + AI Insights
 * Forecasting and anomaly detection
 * Report generation
 
+## Audit, conversations, and dashboards
+
+The backend exposes these APIs under `/api/v1`. Use the existing access-token cookie
+or a `Bearer` access token. Conversations and dashboards are scoped to their owner;
+audit-log endpoints require the `ADMIN` or `SUPER_ADMIN` role.
+
+### Conversations
+
+* `POST /conversations` — create a conversation (`{ "title": "Sales" }`)
+* `GET /conversations?page=1&limit=25` — list the signed-in user's conversations
+* `GET /conversations/:id` — retrieve a conversation and its latest 20 messages
+* `PATCH /conversations/:id` — rename or archive/unarchive it
+* `DELETE /conversations/:id` — delete a conversation and its messages
+* `GET /conversations/:id/messages?page=1&limit=25` — list messages
+* `POST /conversations/:id/messages` — add a user text message
+* `DELETE /conversations/:id/messages/:messageId` — delete one owned message
+* `POST /conversations/:id/ask` — run a dataset question, e.g.
+  `{ "datasetId": "<uuid>", "question": "Compare sales with last month." }`
+
+Asking uses the existing read-only Text-to-SQL service and the latest bounded
+conversation history. SQL, assistant insight, and query references are persisted
+as typed messages. Query errors saved to history are sanitized; raw database errors
+are not exposed to clients.
+
+### Dashboards
+
+* `POST /dashboards`, `GET /dashboards`, `GET /dashboards/:id`,
+  `PATCH /dashboards/:id`, and `DELETE /dashboards/:id`
+* `GET /dashboards/:id/widgets` — list widgets
+* `POST /dashboards/:id/widgets` — save a visualization, optionally referencing
+  an owned successful query with `queryId`
+* `PATCH /dashboards/:id/widgets/:widgetId` and
+  `DELETE /dashboards/:id/widgets/:widgetId`
+* `PATCH /dashboards/:id/widgets/reorder` — set widget positions
+* `POST /dashboards/:id/widgets/:widgetId/refresh` — revalidate and safely
+  re-execute its saved read-only query against the current owned dataset
+
+Widget refresh returns `rows`, `columns`, a chart suggestion, and the saved query
+summary. Dashboard records store query references and visualization configuration,
+not copied business datasets.
+
+### Audit
+
+* `GET /audit` — paginated/filterable audit search
+* `GET /audit/:id` — retrieve a single record
+* `GET /audit/user/:userId` — filter records for a user
+* `GET /audit/resource/:resourceType/:resourceId` — filter records for a resource
+
+List filters include `page`, `limit` (maximum 100), `userId`, `action`,
+`category`, `resourceType`, `resourceId`, `status`, `from`, `to`, and `search`.
+Audit metadata is scrubbed for password/token/secret-like keys before storage.
+Login, logout, user creation, business-data changes, query execution/rejection,
+conversation/message changes, analytics, report generation/export, and dashboard
+operations are recorded.
+
+### Prisma and tests
+
+The active BI Prisma schema is split across `prisma/schema/*.prisma`. Validate it
+and regenerate the client with:
+
+```sh
+pnpm exec prisma validate
+pnpm exec prisma generate
+pnpm test
+pnpm build
+```
+
+**Review the schema-transition migration before applying it to another
+environment.** The project history starts with the earlier healthcare schema;
+`20261004120000_bi_platform_schema` transitions to the active BI schema and drops
+the legacy `patients` and `users` tables. Apply it only where those tables have
+been backed up or are confirmed disposable. Never apply it to production without
+an explicit data-retention plan.
+
 ---
 
 # 2. AI Interview & Recruitment Intelligence System

@@ -62,6 +62,51 @@ enum MessageRole {
   ASSISTANT
 }
 
+enum MessageType {
+  TEXT
+  SQL
+  QUERY_RESULT
+  CHART
+  INSIGHT
+  ERROR
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AuditCategory {
+  AUTH
+  USER
+  DATA
+  QUERY
+  AI
+  CONVERSATION
+  DASHBOARD
+  REPORT
+  SYSTEM
+}
+
+enum AuditStatus {
+  SUCCESS
+  FAILURE
+  REJECTED
+}
+
+enum DashboardWidgetType {
+  KPI
+  TABLE
+  BAR_CHART
+  LINE_CHART
+  PIE_CHART
+  AREA_CHART
+  SCATTER
+  METRIC
+  TEXT
+  INSIGHT
+}
+
 enum DocumentStatus {
   PROCESSING
   READY

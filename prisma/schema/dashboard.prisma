@@ -1,0 +1,35 @@
+model Dashboard {
+  id          String  @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  isDefault   Boolean @default(false)
+  layout      Json?
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  widgets DashboardWidget[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model DashboardWidget {
+  id            String              @id @default(uuid())
+  dashboardId   String
+  queryId       String?
+  title         String
+  type          DashboardWidgetType
+  position      Int                 @default(0)
+  configuration Json?
+
+  dashboard Dashboard    @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  query     QueryHistory? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dashboardId, position])
+  @@index([queryId])
+}

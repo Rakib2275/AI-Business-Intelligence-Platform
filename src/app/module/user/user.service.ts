@@ -1,8 +1,14 @@
 import type { UploadApiResponse } from "cloudinary"
 import { cloudinary } from "../../lib/cloudinry"
 import { prisma } from "../../lib/prisma"
+import { auditService } from "../audit/audit.service"
+import type { AuditRequestContext } from "../audit/audit.service"
 
-const uploadProfileImage = async (buffer : Buffer,userId : string) =>{
+const uploadProfileImage = async (
+    buffer: Buffer,
+    userId: string,
+    context: AuditRequestContext = {},
+) =>{
     // cloudinary.uploader.upload_stream(
     //     {
     //         resource_type : "auto"
@@ -73,6 +79,17 @@ const uploadProfileImage = async (buffer : Buffer,userId : string) =>{
             if(currentUser?.imagePublicId && currentUser.imageUrl){
                 await cloudinary.uploader.destroy(currentUser.imagePublicId)
             }
+
+    await auditService.log({
+        userId,
+        action: "USER_UPDATED",
+        category: "USER",
+        resourceType: "User",
+        resourceId: userId,
+        description: "User profile image updated.",
+        metadata: { changedFields: ["imageUrl"] },
+        ...context,
+    })
 
     return updateUser
 
