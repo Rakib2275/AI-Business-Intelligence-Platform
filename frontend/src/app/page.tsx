@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
 	ArrowRight,
 	ArrowUpRight,
 	BarChart3,
 	Database,
+	LayoutDashboard,
+	LogOut,
 	MessageSquareText,
 	Sparkles,
 } from "lucide-react";
 import { ApiError, apiRequest } from "@/lib/api";
-import type { User } from "@/lib/types";
+import { demoProducts } from "@/lib/demo-products";
+import type { Product, User } from "@/lib/types";
 
 const capabilities = [
 	{
@@ -33,13 +35,149 @@ const capabilities = [
 ];
 
 export default function HomePage() {
-	const router = useRouter();
+	const [currentUser, setCurrentUser] = useState<User | null>(null);
+	const [sessionLoading, setSessionLoading] = useState(true);
+	const [products, setProducts] = useState<Product[]>([]);
+	const [productsLoading, setProductsLoading] = useState(true);
+	const [productsError, setProductsError] = useState("");
+	const [productSearch, setProductSearch] = useState("");
+	const [minimumPrice, setMinimumPrice] = useState("");
+	const [maximumPrice, setMaximumPrice] = useState("");
+	const [selectedBrand, setSelectedBrand] = useState("");
+	const [selectedLocation, setSelectedLocation] = useState("");
+	const [loggingOut, setLoggingOut] = useState(false);
+	const [logoutError, setLogoutError] = useState("");
+	const isCustomer = currentUser?.role === "COUSTOMER";
+	const catalogProducts =
+		!productsLoading && !productsError && products.length === 0
+			? demoProducts
+			: products;
+	const brands = [
+		...new Set(catalogProducts.map((product) => product.brand).filter(Boolean)),
+	].sort((first, second) => first.localeCompare(second));
+	const locations = [
+		...new Set(catalogProducts.map((product) => product.location).filter(Boolean)),
+	].sort((first, second) => first.localeCompare(second));
+
+	const filteredProducts = catalogProducts.filter((product) => {
+		const search = productSearch.trim().toLowerCase();
+		const searchableText =
+			`${product.name} ${product.title} ${product.description} ${product.brand} ${product.location}`.toLowerCase();
+		const price = Number(product.price);
+
+		return (
+			(!search || searchableText.includes(search)) &&
+			(!selectedBrand || product.brand === selectedBrand) &&
+			(!selectedLocation || product.location === selectedLocation) &&
+			(minimumPrice === "" || price >= Number(minimumPrice)) &&
+			(maximumPrice === "" || price <= Number(maximumPrice))
+		);
+	});
+
+	const productFilters = (
+		<div className="customer-product-filters">
+			<label className="customer-filter-field">
+				<span>Search products</span>
+				<input
+					type="search"
+					placeholder="Name or keyword"
+					value={productSearch}
+					onChange={(event) => setProductSearch(event.target.value)}
+				/>
+			</label>
+			<label className="customer-filter-field">
+				<span>Brand</span>
+				<select
+					value={selectedBrand}
+					onChange={(event) => setSelectedBrand(event.target.value)}
+				>
+					<option value="">All brands</option>
+					{brands.map((brand) => (
+						<option key={brand} value={brand}>
+							{brand}
+						</option>
+					))}
+				</select>
+			</label>
+			<label className="customer-filter-field">
+				<span>Location</span>
+				<select
+					value={selectedLocation}
+					onChange={(event) => setSelectedLocation(event.target.value)}
+				>
+					<option value="">All locations</option>
+					{locations.map((location) => (
+						<option key={location} value={location}>
+							{location}
+						</option>
+					))}
+				</select>
+			</label>
+			<div className="customer-filter-field">
+				<span>Price range (৳)</span>
+				<div className="customer-price-range">
+					<input
+						type="number"
+						min="0"
+						placeholder="Min"
+						aria-label="Minimum product price"
+						value={minimumPrice}
+						onChange={(event) => setMinimumPrice(event.target.value)}
+					/>
+					<input
+						type="number"
+						min="0"
+						placeholder="Max"
+						aria-label="Maximum product price"
+						value={maximumPrice}
+						onChange={(event) => setMaximumPrice(event.target.value)}
+					/>
+				</div>
+			</div>
+			{(productSearch ||
+				selectedBrand ||
+				selectedLocation ||
+				minimumPrice ||
+				maximumPrice) && (
+				<button
+					className="customer-filter-reset"
+					type="button"
+					onClick={() => {
+						setProductSearch("");
+						setSelectedBrand("");
+						setSelectedLocation("");
+						setMinimumPrice("");
+						setMaximumPrice("");
+					}}
+				>
+					Clear filters
+				</button>
+			)}
+		</div>
+	);
+
+	const handleLogout = async () => {
+		setLogoutError("");
+		setLoggingOut(true);
+		try {
+			await apiRequest("/auth/logout", { method: "POST" });
+			window.location.assign("/login");
+		} catch (error) {
+			console.error("Customer sign out failed:", error);
+			setLogoutError(
+				error instanceof ApiError
+					? error.message
+					: "Sign out failed. Please try again.",
+			);
+			setLoggingOut(false);
+		}
+	};
 
 	useEffect(() => {
 		let active = true;
 		apiRequest<User>("/auth/me")
-			.then(() => {
-				if (active) router.replace("/dashboard");
+			.then(({ data: user }) => {
+				if (active) setCurrentUser(user);
 			})
 			.catch((error: unknown) => {
 				if (
@@ -48,40 +186,156 @@ export default function HomePage() {
 				) {
 					console.error("Session check failed:", error);
 				}
+			})
+			.finally(() => {
+				if (active) setSessionLoading(false);
 			});
 		return () => {
 			active = false;
 		};
-	}, [router]);
+	}, []);
+
+	useEffect(() => {
+		let active = true;
+		apiRequest<Product[]>("/products")
+			.then(({ data }) => {
+				if (active) setProducts(data);
+			})
+			.catch((error: unknown) => {
+				if (active) {
+					console.error("Product catalog failed to load:", error);
+					setProductsError("Products could not be loaded right now.");
+				}
+			})
+			.finally(() => {
+				if (active) setProductsLoading(false);
+			});
+		return () => {
+			active = false;
+		};
+	}, []);
 
 	return (
-		<div className="public-home">
-			<header className="public-topbar">
-				<Link className="brand public-brand" href="/" aria-label="Northstar home">
-					<span className="brand-mark">
-						<Sparkles size={18} />
-					</span>
-					<span className="brand-name">
-						northstar<span>.</span>
-					</span>
-				</Link>
-				<nav className="public-nav" aria-label="Main navigation">
-					<Link className="public-nav-current" href="/">
-						Dashboard
+		<div
+			className={`public-home ${isCustomer ? "public-home-customer" : ""}`}
+		>
+			{isCustomer && (
+				<aside className="public-customer-sidebar">
+					<Link className="brand" href="/" aria-label="Noviq home">
+						<span className="brand-mark">
+							<Sparkles size={18} />
+						</span>
+						<span className="brand-name">
+							noviq<span>.</span>
+						</span>
 					</Link>
-					<div className="public-auth-links">
-						<Link className="button button-quiet" href="/login">
-							Log in
+					<div className="nav-label">WORKSPACE</div>
+					<nav className="main-nav" aria-label="Customer navigation">
+						<Link
+							className="nav-link"
+							href="/dashboard"
+							aria-label="Open dashboard"
+						>
+							<LayoutDashboard size={18} strokeWidth={1.8} />
+							<span>Dashboard</span>
 						</Link>
-						<Link className="button button-primary" href="/register">
-							Sign up <ArrowUpRight size={15} />
+					</nav>
+					<div className="customer-filter-heading">FILTER PRODUCTS</div>
+					{productFilters}
+					<div className="sidebar-spacer" />
+					<div className="sidebar-footer">
+						<Link className="sidebar-profile-link" href="/profile">
+							<span className="user-avatar">
+								{currentUser.imageUrl ? (
+									<img src={currentUser.imageUrl} alt="" />
+								) : (
+									currentUser.name.trim().charAt(0).toUpperCase()
+								)}
+							</span>
+							<span className="user-copy">
+								<strong>{currentUser.name}</strong>
+								<small>Customer</small>
+							</span>
+						</Link>
+						<button
+							className="icon-button logout-button"
+							type="button"
+							title="Sign out"
+							aria-label="Sign out"
+							disabled={loggingOut}
+							onClick={() => void handleLogout()}
+						>
+							<LogOut size={17} />
+						</button>
+					</div>
+					{logoutError && (
+						<p className="sidebar-error" role="alert">
+							{logoutError}
+						</p>
+					)}
+				</aside>
+			)}
+			{isCustomer ? (
+				<header className="topbar public-customer-navbar">
+					<div className="breadcrumb">
+						<span>Workspace</span>
+						<span className="crumb-slash">/</span>
+						<strong>Home</strong>
+					</div>
+					<div className="topbar-right">
+						<div className="live-indicator">
+							<span /> All systems operational
+						</div>
+						<Link
+							className="profile-avatar-link"
+							href="/profile"
+							aria-label="Open profile"
+							title={currentUser.name}
+						>
+							<span className="topbar-avatar">
+								{currentUser.imageUrl ? (
+									<img src={currentUser.imageUrl} alt="" />
+								) : (
+									currentUser.name.trim().charAt(0).toUpperCase()
+								)}
+							</span>
 						</Link>
 					</div>
-				</nav>
-			</header>
+				</header>
+			) : (
+				<header className="public-topbar">
+					<Link className="brand public-brand" href="/" aria-label="Noviq home">
+						<span className="brand-mark">
+							<Sparkles size={18} />
+						</span>
+						<span className="brand-name">
+							noviq<span>.</span>
+						</span>
+					</Link>
+					<nav className="public-nav" aria-label="Main navigation">
+						<Link className="public-nav-current" href="/">
+							Home
+						</Link>
+						{currentUser && currentUser.role !== "COUSTOMER" ? (
+							<Link className="button button-primary" href="/dashboard">
+								Dashboard <ArrowUpRight size={15} />
+							</Link>
+						) : !currentUser ? (
+							<div className="public-auth-links">
+								<Link className="button button-quiet" href="/login">
+									Log in
+								</Link>
+								<Link className="button button-primary" href="/register">
+									Sign up <ArrowUpRight size={15} />
+								</Link>
+							</div>
+						) : null}
+					</nav>
+				</header>
+			)}
 
-			<main className="public-dashboard">
-				<section className="public-hero">
+			<main className={`public-dashboard ${isCustomer ? "public-storefront-dashboard" : ""}`}>
+				{!isCustomer && !sessionLoading && <section className="public-hero">
 					<div className="public-hero-copy">
 						<div className="eyebrow">
 							<span className="eyebrow-dot" /> BUSINESS INTELLIGENCE, IN FOCUS
@@ -95,16 +349,16 @@ export default function HomePage() {
 							Bring your data into focus. Ask better questions, find the story
 							in the numbers, and share what matters.
 						</p>
-						<div className="public-hero-actions">
+						{!currentUser && <div className="public-hero-actions">
 							<Link className="button button-primary" href="/register">
 								Get started <ArrowRight size={16} />
 							</Link>
 							<Link className="button button-secondary" href="/login">
 								Log in to your workspace
 							</Link>
-						</div>
+						</div>}
 					</div>
-					<div className="public-preview" aria-label="Northstar workspace preview">
+					<div className="public-preview" aria-label="Noviq workspace preview">
 						<div className="public-preview-header">
 							<div>
 								<span className="public-preview-kicker">YOUR WORKSPACE</span>
@@ -146,9 +400,79 @@ export default function HomePage() {
 							</div>
 						</div>
 					</div>
+				</section>}
+
+				<section className="public-products" aria-labelledby="public-products-title">
+					{isCustomer && (
+						<div className="customer-mobile-filters">
+							<strong>Filter products</strong>
+							{productFilters}
+						</div>
+					)}
+					<div className="public-section-heading">
+						<div>
+							{!isCustomer && (
+								<div className="eyebrow">FEATURED FOR YOU</div>
+							)}
+							<h2 id="public-products-title">
+								{isCustomer ? "Shop products" : "Explore our products."}
+							</h2>
+						</div>
+						<span>
+							{filteredProducts.length}{" "}
+							{filteredProducts.length === 1 ? "product" : "products"} found
+						</span>
+					</div>
+					{productsLoading ? (
+						<p className="public-products-message" role="status">
+							Loading products…
+						</p>
+					) : productsError ? (
+						<p className="public-products-message public-products-error" role="alert">
+							{productsError}
+						</p>
+					) : filteredProducts.length ? (
+						<div className="public-product-grid">
+							{filteredProducts.map((product) => (
+								<Link
+									className="public-product-card"
+									href={`/product-details/${product.id}`}
+									key={product.id}
+								>
+									<div className="public-product-photo">
+										<img src={product.imageUrl} alt={product.name} loading="lazy" />
+										{product.id.startsWith("demo-") && (
+											<span className="public-product-sample">Sample</span>
+										)}
+									</div>
+									<div className="public-product-copy">
+										<div className="public-product-title">{product.title}</div>
+										<h3>{product.name}</h3>
+										<div className="public-product-meta">
+											{product.brand && <span>{product.brand}</span>}
+											{product.location && <span>{product.location}</span>}
+										</div>
+										<p>{product.description}</p>
+										<strong className="public-product-price">
+											৳ {Number(product.price).toLocaleString("en-BD", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											})}
+										</strong>
+									</div>
+								</Link>
+							))}
+						</div>
+					) : (
+						<p className="public-products-message">
+							{catalogProducts.length
+								? "No products match these filters. Try changing your search or price range."
+								: "Our product selection will appear here soon."}
+						</p>
+					)}
 				</section>
 
-				<section className="public-capabilities" aria-label="What you can do">
+				{!isCustomer && !sessionLoading && <section className="public-capabilities" aria-label="What you can do">
 					<div className="public-section-heading">
 						<div>
 							<div className="eyebrow">ONE PLACE TO FIND THE SIGNAL</div>
@@ -167,15 +491,27 @@ export default function HomePage() {
 							</article>
 						))}
 					</div>
-				</section>
+				</section>}
 			</main>
 
-			<footer className="public-footer">
-				<span>
-					<Sparkles size={13} /> NORTHSTAR INTELLIGENCE
-				</span>
-				<span>Your data stays yours</span>
-			</footer>
+			{!sessionLoading && (
+				<footer
+					className={`public-footer ${isCustomer ? "public-customer-footer" : ""}`}
+				>
+					<span>
+						<Sparkles size={13} /> NOVIQ
+					</span>
+					<span>
+						{isCustomer ? (
+							<>
+								Developed by <strong>Rakib, Asad &amp; Rasel</strong>
+							</>
+						) : (
+							"Your data stays yours"
+						)}
+					</span>
+				</footer>
+			)}
 		</div>
 	);
 }

@@ -6,6 +6,18 @@ export type User = {
 	imageUrl?: string | null;
 };
 
+export type Product = {
+	id: string;
+	name: string;
+	title: string;
+	description: string;
+	brand: string;
+	location: string;
+	price: number | string;
+	imageUrl: string;
+	createdAt: string;
+};
+
 export type PageMeta = {
 	page: number;
 	limit: number;

@@ -81,7 +81,7 @@ function MessageView({
 					<Sparkles size={14} />
 				</div>
 				<div className="chat-message-body">
-					<span className="chat-author">NORTHSTAR</span>
+					<span className="chat-author">NOVIQ</span>
 					<div className="assistant-bubble assistant-error">
 						{message.content}
 					</div>
@@ -97,7 +97,7 @@ function MessageView({
 				</div>
 				<div className="chat-message-body">
 					<span className="chat-author">
-						NORTHSTAR{" "}
+						NOVIQ{" "}
 						<span className="verified-answer">
 							<Check size={11} /> GROUNDED IN YOUR DATA
 						</span>
@@ -164,7 +164,7 @@ function MessageView({
 				<Sparkles size={14} />
 			</div>
 			<div className="chat-message-body">
-				<span className="chat-author">NORTHSTAR</span>
+				<span className="chat-author">NOVIQ</span>
 				<div className="assistant-bubble">{message.content}</div>
 			</div>
 		</div>
@@ -602,7 +602,7 @@ export default function ConversationsPage() {
 											<Sparkles size={14} />
 										</div>
 										<div className="chat-message-body">
-											<span className="chat-author">NORTHSTAR</span>
+											<span className="chat-author">NOVIQ</span>
 											<div className="typing-bubble">
 												<i />
 												<i />

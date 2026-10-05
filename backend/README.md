@@ -125,6 +125,29 @@ Login, logout, user creation, business-data changes, query execution/rejection,
 conversation/message changes, analytics, report generation/export, and dashboard
 operations are recorded.
 
+### Product catalog
+
+* `GET /products` — public list of products for the storefront
+* `POST /products` — add one product; requires the `ADMIN` or `SUPER_ADMIN`
+  role and a `multipart/form-data` request containing `name`, `title`,
+  `description`, `brand`, `location`, `price`, and an image file in `photo`
+
+Product photos are stored in Cloudinary. Newly created products are immediately
+available in the homepage catalog.
+
+### Product checkout
+
+* `POST /payments/products/:productId/checkout` — start a bKash checkout for the
+  signed-in customer. The product price is read from the database.
+* `POST /payments/bkash/execute` — verify and record the bKash transaction after
+  the customer returns from the gateway.
+* `POST /payments/orders/:orderId/cancel` — mark the signed-in customer's
+  unfinished checkout as cancelled.
+
+The checkout uses the configured bKash sandbox credentials and returns to
+`/payment-return` on the frontend. Payment is only marked successful after the
+backend verifies the bKash transaction status, payment ID, invoice, and amount.
+
 ### Frontend
 
 The standalone Next.js application lives in `frontend/` and communicates with

@@ -28,8 +28,17 @@ export default function LoginPage() {
 				method: "POST",
 				body: { email, password },
 			});
-			await apiRequest("/auth/me");
-			window.location.assign("/dashboard");
+			const { data: user } = await apiRequest<{ role: string }>("/auth/me");
+			const nextPath = new URLSearchParams(window.location.search).get("next");
+			const isCheckoutPath =
+				nextPath !== null && /^\/checkout\/[a-zA-Z0-9_-]+$/.test(nextPath);
+			window.location.assign(
+				isCheckoutPath && user.role === "COUSTOMER"
+					? nextPath
+					: user.role === "COUSTOMER"
+						? "/"
+						: "/dashboard",
+			);
 		} catch (caught) {
 			setError(
 				caught instanceof ApiError
@@ -49,7 +58,7 @@ export default function LoginPage() {
 						<Sparkles size={18} />
 					</span>
 					<span className="brand-name">
-						northstar<span>.</span>
+						noviq<span>.</span>
 					</span>
 				</a>
 				<div className="login-copy">
@@ -101,7 +110,7 @@ export default function LoginPage() {
 					</div>
 				</div>
 				<div className="login-copyright">
-					© {new Date().getFullYear()} Northstar Intelligence
+					© {new Date().getFullYear()} Noviq
 				</div>
 			</div>
 			<div className="login-right">
@@ -111,7 +120,7 @@ export default function LoginPage() {
 							<Sparkles size={18} />
 						</span>
 						<span className="brand-name">
-							northstar<span>.</span>
+							noviq<span>.</span>
 						</span>
 					</div>
 					<span className="form-kicker">WELCOME BACK</span>
@@ -182,7 +191,7 @@ export default function LoginPage() {
 						cookies
 					</div>
 					<div className="register-login-link">
-						New to Northstar? <Link href="/register">Create an account</Link>
+						New to Noviq? <Link href="/register">Create an account</Link>
 					</div>
 				</div>
 				<div className="login-footnote">

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Product" ALTER COLUMN "brand" DROP DEFAULT,
+ALTER COLUMN "location" DROP DEFAULT;

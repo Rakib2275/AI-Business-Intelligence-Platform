@@ -7,11 +7,6 @@ import { businessDataController } from "./businessData.controller";
 
 const router = Router();
 
-
-// ========================================
-// MULTER
-// ========================================
-
 const upload = multer({
   storage: multer.memoryStorage(),
 
@@ -20,10 +15,6 @@ const upload = multer({
   },
 });
 
-
-// ========================================
-// ROUTES
-// ========================================
 
 // Upload CSV / Excel
 router.post(

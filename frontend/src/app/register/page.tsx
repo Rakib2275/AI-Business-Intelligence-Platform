@@ -50,7 +50,7 @@ export default function RegisterPage() {
 					method: "POST",
 					body: { email, otp },
 				});
-				router.replace("/dashboard");
+				router.replace("/");
 			}
 		} catch (caught) {
 			setError(
@@ -71,7 +71,7 @@ export default function RegisterPage() {
 						<Sparkles size={18} />
 					</span>
 					<span className="brand-name">
-						northstar<span>.</span>
+						noviq<span>.</span>
 					</span>
 				</Link>
 				<div className="login-copy">
@@ -114,7 +114,7 @@ export default function RegisterPage() {
 					</div>
 				</div>
 				<div className="login-copyright">
-					© {new Date().getFullYear()} Northstar Intelligence
+					© {new Date().getFullYear()} Noviq
 				</div>
 			</div>
 			<div className="login-right">
@@ -124,7 +124,7 @@ export default function RegisterPage() {
 							<Sparkles size={18} />
 						</span>
 						<span className="brand-name">
-							northstar<span>.</span>
+							noviq<span>.</span>
 						</span>
 					</div>
 					<span className="form-kicker">
