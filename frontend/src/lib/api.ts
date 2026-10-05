@@ -30,16 +30,23 @@ export async function apiRequest<T>(
 	options: ApiOptions = {},
 ): Promise<ApiEnvelope<T>> {
 	const headers = new Headers(options.headers);
-	if (options.body !== undefined)
+	const isFormData =
+		typeof FormData !== "undefined" && options.body instanceof FormData;
+	if (options.body !== undefined && !isFormData)
 		headers.set("Content-Type", "application/json");
+	const requestBody: BodyInit | null | undefined =
+		options.body === undefined
+			? undefined
+			: typeof FormData !== "undefined" && options.body instanceof FormData
+				? options.body
+				: JSON.stringify(options.body);
 
 	let response: Response;
 	try {
 		response = await fetch(`/api/v1${path}`, {
 			...options,
 			headers,
-			body:
-				options.body === undefined ? undefined : JSON.stringify(options.body),
+			body: requestBody,
 			credentials: "same-origin",
 			cache: "no-store",
 		});
