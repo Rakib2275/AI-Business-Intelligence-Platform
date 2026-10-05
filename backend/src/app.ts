@@ -5,15 +5,17 @@ import httpStatus from "http-status";
 import config from "./app/config";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
-import { AuthRoutes } from "./app/module/auth/auth.route";
-import { UserRoutes } from "./app/module/user/user.route";
-import { businessDataRoute } from "./app/module/business-data/businessData.route";
-import { queryRoute } from "./app/module/query/query.route";
 import { analyticsRoute } from "./app/module/analytics/analytics.route";
-import { reportRoute } from "./app/module/report/report.route";
 import { auditRoute } from "./app/module/audit/audit.route";
+import { AuthRoutes } from "./app/module/auth/auth.route";
+import { businessDataRoute } from "./app/module/business-data/businessData.route";
 import { conversationRoute } from "./app/module/conversation/conversation.route";
 import { dashboardRoute } from "./app/module/dashboard/dashboard.route";
+import { productRoute } from "./app/module/product/product.route";
+import { paymentRoute } from "./app/module/payment/payment.route";
+import { queryRoute } from "./app/module/query/query.route";
+import { reportRoute } from "./app/module/report/report.route";
+import { UserRoutes } from "./app/module/user/user.route";
 
 const app: Application = express();
 
@@ -41,6 +43,8 @@ app.use("/api/v1/reports", reportRoute);
 app.use("/api/v1/audit", auditRoute);
 app.use("/api/v1/conversations", conversationRoute);
 app.use("/api/v1/dashboards", dashboardRoute);
+app.use("/api/v1/products", productRoute);
+app.use("/api/v1/payments", paymentRoute);
 
 app.get("/", (_req, res: Response) => {
 	res.status(httpStatus.OK).json({

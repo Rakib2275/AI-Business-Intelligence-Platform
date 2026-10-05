@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-	title: "Northstar BI · Business intelligence",
+	title: "Noviq · Business intelligence",
 	description:
-		"A clear view of your data, conversations, and business intelligence.",
+		"Discover products and explore business intelligence with Noviq.",
 };
 
 export default function RootLayout({

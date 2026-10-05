@@ -18,6 +18,7 @@ model User {
   auditLogs    AuditLog[]
   notifications Notification[]
   usageRecords  UsageRecord[]
+  productOrders ProductOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

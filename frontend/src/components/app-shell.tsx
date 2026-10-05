@@ -10,6 +10,7 @@ import {
 	ChevronDown,
 	Command,
 	Database,
+	House,
 	ImagePlus,
 	LayoutDashboard,
 	LogOut,
@@ -21,7 +22,8 @@ import { useState } from "react";
 import { useSession } from "@/lib/session";
 
 const navItems = [
-	{ label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+	{ label: "Home", href: "/", icon: House },
+	{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 	{ label: "Ask your data", href: "/conversations", icon: MessageSquareText },
 	{ label: "Dashboards", href: "/dashboards", icon: BarChart3 },
 	{ label: "Audit trail", href: "/audit", icon: ShieldCheck, admin: true },
@@ -43,8 +45,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 			? "Profile picture"
 			: pathname === "/profile"
 				? "My profile"
-			: (navItems.find((item) => pathname.startsWith(item.href))?.label ??
-				"Workspace");
+				: (navItems.find(
+						(item) =>
+							pathname === item.href ||
+							(item.href !== "/" && pathname.startsWith(item.href)),
+					)?.label ?? "Workspace");
 
 	const handleLogout = async () => {
 		setLogoutError("");
@@ -58,12 +63,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="workspace">
 			<aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
-				<Link className="brand" href="/dashboard" aria-label="Northstar home">
+				<Link className="brand" href="/dashboard" aria-label="Noviq home">
 					<span className="brand-mark">
 						<Sparkles size={18} />
 					</span>
 					<span className="brand-name">
-						northstar<span>.</span>
+						noviq<span>.</span>
 					</span>
 				</Link>
 
@@ -82,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						<Link
 							key={href}
 							href={href}
-							className={`nav-link ${pathname.startsWith(href) ? "nav-link-active" : ""}`}
+							className={`nav-link ${pathname === href || (href !== "/" && pathname.startsWith(href)) ? "nav-link-active" : ""}`}
 							onClick={() => setMobileOpen(false)}
 						>
 							<Icon size={18} strokeWidth={1.8} />
@@ -102,7 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						<Bot size={17} />
 					</div>
 					<strong>Your data, in context.</strong>
-					<p>Ask a follow-up. Northstar remembers what matters.</p>
+					<p>Ask a follow-up. Noviq remembers what matters.</p>
 					<Link href="/conversations">
 						Start a conversation <ArrowUpRight size={13} />
 					</Link>
@@ -174,7 +179,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				<main className="main-content">{children}</main>
 				<footer className="app-footer">
 					<span>
-						<Activity size={13} /> NORTHSTAR INTELLIGENCE
+						<Activity size={13} /> NOVIQ
 					</span>
 					<span>
 						<Database size={13} /> Your data stays yours
