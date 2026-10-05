@@ -10,6 +10,7 @@ import {
 	ChevronDown,
 	Command,
 	Database,
+	ImagePlus,
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
@@ -38,8 +39,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	);
 	const initial = user?.name.trim().charAt(0).toUpperCase() || "U";
 	const pageName =
-		navItems.find((item) => pathname.startsWith(item.href))?.label ??
-		"Workspace";
+		pathname.startsWith("/profile-picture")
+			? "Profile picture"
+			: pathname === "/profile"
+				? "My profile"
+			: (navItems.find((item) => pathname.startsWith(item.href))?.label ??
+				"Workspace");
 
 	const handleLogout = async () => {
 		setLogoutError("");
@@ -103,11 +108,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 					</Link>
 				</div>
 				<div className="sidebar-footer">
-					<div className="user-avatar">{initial}</div>
-					<div className="user-copy">
-						<strong>{user?.name}</strong>
-						<small>{user?.role?.replaceAll("_", " ")}</small>
-					</div>
+					<Link className="sidebar-profile-link" href="/profile">
+						<span className="user-avatar">
+							{user?.imageUrl ? (
+								<img src={user.imageUrl} alt="" />
+							) : (
+								initial
+							)}
+						</span>
+						<span className="user-copy">
+							<strong>{user?.name}</strong>
+							<small>{user?.role?.replaceAll("_", " ")}</small>
+						</span>
+					</Link>
 					<button
 						className="icon-button logout-button"
 						type="button"
@@ -139,7 +152,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						<div className="live-indicator">
 							<span /> All systems operational
 						</div>
-						<div className="topbar-avatar">{initial}</div>
+						<Link
+							className="profile-avatar-link"
+							href="/profile-picture"
+							aria-label="Change profile picture"
+							title="Change profile picture"
+						>
+							<span className="topbar-avatar">
+								{user?.imageUrl ? (
+									<img src={user.imageUrl} alt="" />
+								) : (
+									initial
+								)}
+							</span>
+							<span className="profile-avatar-hint">
+								<ImagePlus size={13} /> Change photo
+							</span>
+						</Link>
 					</div>
 				</header>
 				<main className="main-content">{children}</main>

@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
 	ArrowRight,
 	Eye,
@@ -19,7 +18,6 @@ export default function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
-	const router = useRouter();
 
 	const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -30,7 +28,8 @@ export default function LoginPage() {
 				method: "POST",
 				body: { email, password },
 			});
-			router.replace("/dashboard");
+			await apiRequest("/auth/me");
+			window.location.assign("/dashboard");
 		} catch (caught) {
 			setError(
 				caught instanceof ApiError

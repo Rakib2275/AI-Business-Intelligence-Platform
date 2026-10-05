@@ -132,12 +132,15 @@ the API through a same-origin rewrite. This keeps the access and refresh tokens
 in HTTP-only cookies rather than browser storage.
 
 ```sh
+# From the repository root
+pnpm --dir backend install
+
 # Terminal 1: run the backend
-pnpm dev
+pnpm --dir backend dev
 
 # Terminal 2: run the frontend
 pnpm --dir frontend install
-pnpm frontend:dev
+pnpm --dir frontend dev
 ```
 
 The frontend expects the backend at `http://localhost:8000` by default. Override

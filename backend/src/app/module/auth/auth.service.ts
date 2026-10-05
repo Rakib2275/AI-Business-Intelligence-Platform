@@ -110,6 +110,10 @@ const verifyPatientEmail = async (
 		throw new Error("User is Deleted")
 	}
 
+	if (isUserExist) {
+		throw new AppError("This email is already verified. Please log in.", 409)
+	}
+
 	const otpKey = `patient-registration-otp:${email}`
 
 	const redisOtp = await redisClient.get(otpKey)
@@ -121,8 +125,6 @@ const verifyPatientEmail = async (
 	if (redisOtp !== otp) {
 		throw new Error("OTP Does Not Match")
 	}
-
-	await redisClient.del(otpKey)
 
 	const patientRegistrationKey = `patient-registration-data:${email}`
 
@@ -155,24 +157,22 @@ const verifyPatientEmail = async (
 		...context,
 	});
 
+	await redisClient.del(otpKey)
 	await redisClient.del(patientRegistrationKey)
 
-	const tempatePath = path.join(process.cwd(), "src/app/templates/patient-welcome-email.ejs")
+	try {
+		const templatePath = path.join(process.cwd(), "src/app/templates/user-welcome-email.ejs")
+		const html = await ejs.renderFile(templatePath, { name: createdUser.name })
 
-	const templateData = {
-		name : createdUser.name,
+		await transporter.sendMail({
+			from: config.email_sender,
+			to: email,
+			subject: "Welcome To PH Healthcare System",
+			html,
+		})
+	} catch (error) {
+		console.error("Failed to send the welcome email after successful registration.", error)
 	}
-
-	const html = await ejs.renderFile(tempatePath, templateData)
-
-	await transporter.sendMail({
-		from: config.email_sender,
-		to: email,
-		subject: "Welcome To PH Healthcare System",
-		// text : `Your OTP is ${otp}`
-		// html: `<h1>Your OTP is ${otp}</h1>`
-		html
-	})
 
 	const jwtPayload = {
 		userId: createdUser.id,

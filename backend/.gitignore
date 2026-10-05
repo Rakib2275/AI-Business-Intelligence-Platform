@@ -12,6 +12,7 @@ dist
 pnpm-lock.yaml
 yarn.lock
 package-lock.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
 !/frontend/pnpm-lock.yaml
-pnpm-workspace.yaml
 .vscode
