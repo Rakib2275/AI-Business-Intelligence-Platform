@@ -21,8 +21,6 @@ type SessionValue = {
 };
 
 const SessionContext = createContext<SessionValue | null>(null);
-const profileImageStorageKey = (userId: string) =>
-	`northstar:profile-image:${userId}`;
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);
@@ -32,20 +30,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
 	const refresh = useCallback(async () => {
 		const response = await apiRequest<User>("/auth/me");
-		const user = {
-			...response.data,
-			imageUrl:
-				localStorage.getItem(profileImageStorageKey(response.data.id)) ??
-				response.data.imageUrl,
-		};
-		setUser(user);
-		return user;
+		setUser(response.data);
+		return response.data;
 	}, []);
 
 	const updateProfileImage = useCallback(
 		(imageUrl: string) => {
 			if (!user) return;
-			localStorage.setItem(profileImageStorageKey(user.id), imageUrl);
 			setUser((currentUser) =>
 				currentUser ? { ...currentUser, imageUrl } : currentUser,
 			);
@@ -68,12 +59,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 		apiRequest<User>("/auth/me")
 			.then((response) => {
 				if (active) {
-					setUser({
-						...response.data,
-						imageUrl:
-							localStorage.getItem(profileImageStorageKey(response.data.id)) ??
-							response.data.imageUrl,
-					});
+					setUser(response.data);
 				}
 			})
 			.catch((error: unknown) => {

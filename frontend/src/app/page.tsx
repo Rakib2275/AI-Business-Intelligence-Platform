@@ -10,6 +10,8 @@ import {
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
+	Search,
+	ShoppingCart,
 	Sparkles,
 } from "lucide-react";
 import { ApiError, apiRequest } from "@/lib/api";
@@ -47,6 +49,9 @@ export default function HomePage() {
 	const [selectedLocation, setSelectedLocation] = useState("");
 	const [loggingOut, setLoggingOut] = useState(false);
 	const [logoutError, setLogoutError] = useState("");
+	const [cartProductIds, setCartProductIds] = useState<string[]>([]);
+	const [cartOpen, setCartOpen] = useState(false);
+	const [cartError, setCartError] = useState("");
 	const isCustomer = currentUser?.role === "COUSTOMER";
 	const catalogProducts =
 		!productsLoading && !productsError && products.length === 0
@@ -76,15 +81,6 @@ export default function HomePage() {
 
 	const productFilters = (
 		<div className="customer-product-filters">
-			<label className="customer-filter-field">
-				<span>Search products</span>
-				<input
-					type="search"
-					placeholder="Name or keyword"
-					value={productSearch}
-					onChange={(event) => setProductSearch(event.target.value)}
-				/>
-			</label>
 			<label className="customer-filter-field">
 				<span>Brand</span>
 				<select
@@ -215,20 +211,40 @@ export default function HomePage() {
 		};
 	}, []);
 
+	useEffect(() => {
+		const syncCart = () => {
+			try {
+				const savedCart: unknown = JSON.parse(
+					window.localStorage.getItem("noviq:cart") ?? "[]",
+				);
+				if (!Array.isArray(savedCart)) {
+					throw new TypeError("Saved cart must be an array.");
+				}
+				setCartProductIds(
+					[...new Set(savedCart.filter((item): item is string => typeof item === "string"))],
+				);
+				setCartError("");
+			} catch (error) {
+				console.error("Could not load the saved cart:", error);
+				setCartError("Your cart could not be loaded.");
+			}
+		};
+
+		syncCart();
+		window.addEventListener("storage", syncCart);
+		window.addEventListener("noviq:cart-updated", syncCart);
+		return () => {
+			window.removeEventListener("storage", syncCart);
+			window.removeEventListener("noviq:cart-updated", syncCart);
+		};
+	}, []);
+
 	return (
 		<div
 			className={`public-home ${isCustomer ? "public-home-customer" : ""}`}
 		>
 			{isCustomer && (
 				<aside className="public-customer-sidebar">
-					<Link className="brand" href="/" aria-label="Noviq home">
-						<span className="brand-mark">
-							<Sparkles size={18} />
-						</span>
-						<span className="brand-name">
-							noviq<span>.</span>
-						</span>
-					</Link>
 					<div className="nav-label">WORKSPACE</div>
 					<nav className="main-nav" aria-label="Customer navigation">
 						<Link
@@ -277,17 +293,70 @@ export default function HomePage() {
 			)}
 			{isCustomer ? (
 				<header className="topbar public-customer-navbar">
-					<div className="breadcrumb">
-						<span>Workspace</span>
-						<span className="crumb-slash">/</span>
-						<strong>Home</strong>
-					</div>
-					<div className="topbar-right">
-						<div className="live-indicator">
-							<span /> All systems operational
+					<Link className="brand public-customer-brand" href="/" aria-label="Noviq home">
+						<span className="brand-mark">
+							<Sparkles size={18} />
+						</span>
+						<span className="brand-name">
+							noviq<span>.</span>
+						</span>
+					</Link>
+					<label className="customer-navbar-search">
+						<Search size={17} aria-hidden="true" />
+						<input
+							type="search"
+							placeholder="Search products..."
+							aria-label="Search products"
+							value={productSearch}
+							onChange={(event) => setProductSearch(event.target.value)}
+						/>
+					</label>
+					<div className="customer-navbar-actions">
+						<div className="customer-cart">
+							<button
+								className="customer-cart-button"
+								type="button"
+								aria-label={`Shopping cart, ${cartProductIds.length} items`}
+								aria-expanded={cartOpen}
+								onClick={() => setCartOpen((open) => !open)}
+							>
+								<ShoppingCart size={19} />
+								<span className="customer-cart-label">Cart</span>
+								<span className="customer-cart-count">{cartProductIds.length}</span>
+							</button>
+							{cartOpen && (
+								<div className="customer-cart-popover">
+									<strong>Your cart</strong>
+									{cartError ? (
+										<p role="alert">{cartError}</p>
+									) : productsLoading ? (
+										<p>Loading your cart...</p>
+									) : cartProductIds.length === 0 ? (
+										<p>Your cart is empty.</p>
+									) : (
+										<ul>
+											{cartProductIds.map((productId) => {
+												const product = catalogProducts.find(
+													(item) => item.id === productId,
+												);
+												return (
+													<li key={productId}>
+														<span>{product?.name ?? "Product unavailable"}</span>
+														{product && (
+															<Link href={`/checkout/${encodeURIComponent(product.id)}`}>
+																Checkout
+															</Link>
+														)}
+													</li>
+												);
+											})}
+										</ul>
+									)}
+								</div>
+							)}
 						</div>
 						<Link
-							className="profile-avatar-link"
+							className="customer-navbar-profile"
 							href="/profile"
 							aria-label="Open profile"
 							title={currentUser.name}
@@ -298,6 +367,10 @@ export default function HomePage() {
 								) : (
 									currentUser.name.trim().charAt(0).toUpperCase()
 								)}
+							</span>
+							<span className="customer-navbar-user">
+								<strong>{currentUser.name}</strong>
+								<small>Customer</small>
 							</span>
 						</Link>
 					</div>
