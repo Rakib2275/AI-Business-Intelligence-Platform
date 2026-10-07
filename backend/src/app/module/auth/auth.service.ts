@@ -372,7 +372,7 @@ const refreshToken = async (token: string) => {
 };
 
 const forgotPassword = async(payload : IForgotPasswordPayload) =>{
-	const {email} = payload;
+	const email = payload.email.trim().toLowerCase();
 
 	const isUserExists = await prisma.user.findUnique({
 		where :{
@@ -380,17 +380,7 @@ const forgotPassword = async(payload : IForgotPasswordPayload) =>{
 		}
 	})
 
-	if(!isUserExists){
-		throw new Error("User Does not Exist!")
-	}
-
-	if(isUserExists.status === "BLOCKED"){
-		throw new Error("User is Blocked")
-	}
-
-	if(isUserExists.status === UserStatus.DELETED){
-		throw new Error("User is Deleted")
-	}
+	if (!isUserExists || isUserExists.status !== UserStatus.ACTIVE) return;
 
 	const otp = crypto.randomInt(100000,1000000).toString();
 	const key = `forgot-password-otp:${isUserExists.email}`
@@ -424,7 +414,8 @@ const forgotPassword = async(payload : IForgotPasswordPayload) =>{
 }
 
 const resetPassword =async (payload : IResetPasswordPayload) =>{
-	const {email, otp, newPassword} = payload;
+	const { otp, newPassword } = payload;
+	const email = payload.email.trim().toLowerCase();
 
 	const isUserExists = await prisma.user.findUnique({
 		where :{
@@ -432,16 +423,8 @@ const resetPassword =async (payload : IResetPasswordPayload) =>{
 		}
 	})
 
-	if(!isUserExists){
-		throw new Error("User Does not Exist!")
-	}
-
-	if(isUserExists.status === "BLOCKED"){
-		throw new Error("User is Blocked")
-	}
-
-	if(isUserExists.status === UserStatus.DELETED){
-		throw new Error("User is Deleted")
+	if (!isUserExists || isUserExists.status !== UserStatus.ACTIVE) {
+		throw new AppError("Invalid or expired password reset request.", 400);
 	}
 
 	const key = `forgot-password-otp:${isUserExists.email}`
@@ -449,11 +432,11 @@ const resetPassword =async (payload : IResetPasswordPayload) =>{
 	const redisOtp = await redisClient.get(key)
 
 	if(!redisOtp){
-		throw new Error("Invalid OTP")
+		throw new AppError("Invalid or expired password reset request.", 400);
 	}
 
 	if(redisOtp !== otp){
-		throw new Error("OTP Does Not Match")
+		throw new AppError("Invalid or expired password reset request.", 400);
 	}
 
 	const hashedNewPassword = await bcrypt.hash(newPassword,Number(config.bcrypt_salt_rounds))

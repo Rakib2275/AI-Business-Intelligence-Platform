@@ -11,20 +11,25 @@ export const globalErrorHandler = async (
 	res: Response,
 	_next: NextFunction,
 ) => {
-	if (config.node_env === "development") {
-		console.log("Error from Global Error Handler", err);
-	}
-
 	let statusCode: number = httpStatus.INTERNAL_SERVER_ERROR;
 	let errorMessage = "Internal Server Error";
-	const errorName = err instanceof Error ? err.name : "Internal Server Error";
 	const errorDetails = typeof err === "object" && err !== null
-		? err as { statusCode?: unknown; status?: unknown; stack?: unknown }
+		? err as {
+				statusCode?: unknown;
+				status?: unknown;
+				stack?: unknown;
+				type?: unknown;
+			}
 		: {};
 	const providedStatus = errorDetails.statusCode ?? errorDetails.status;
 	if (typeof providedStatus === "number") statusCode = providedStatus;
+	const isMalformedJson =
+		err instanceof SyntaxError && errorDetails.type === "entity.parse.failed";
 
-	if (err instanceof ZodError) {
+	if (isMalformedJson) {
+		statusCode = httpStatus.BAD_REQUEST;
+		errorMessage = "Request body must contain valid JSON.";
+	} else if (err instanceof ZodError) {
 		statusCode = httpStatus.BAD_REQUEST;
 		errorMessage = err.issues[0]?.message || "Validation failed";
 	} else if (err instanceof AppError) {
@@ -60,16 +65,34 @@ export const globalErrorHandler = async (
 		errorMessage = err.message;
 	}
 
+	if (
+		config.node_env === "development" &&
+		statusCode >= httpStatus.INTERNAL_SERVER_ERROR
+	) {
+		console.error("Error from Global Error Handler", err);
+	}
+
 	res.status(statusCode).json({
 		success: false,
 		statusCode: statusCode || httpStatus.INTERNAL_SERVER_ERROR,
-		name:
-			config.node_env === "development" ? errorName : "Internal Server Error",
+		name: config.node_env === "development"
+			? isMalformedJson
+				? "Bad Request"
+				: err instanceof Error
+					? err.name
+					: "Internal Server Error"
+			: "Internal Server Error",
 		message:
 			config.node_env === "development" || statusCode < 500
 				? errorMessage
 				: "Internal Server Error",
-		error: config.node_env === "development" ? err : undefined,
-		stack: config.node_env === "development" ? errorDetails.stack : undefined,
+		error:
+			config.node_env === "development" && statusCode >= 500
+				? err
+				: undefined,
+		stack:
+			config.node_env === "development" && statusCode >= 500
+				? errorDetails.stack
+				: undefined,
 	});
 };

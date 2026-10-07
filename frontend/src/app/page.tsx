@@ -7,9 +7,11 @@ import {
 	ArrowUpRight,
 	BarChart3,
 	Database,
+	House,
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
+	PackagePlus,
 	Search,
 	ShoppingCart,
 	Sparkles,
@@ -53,12 +55,10 @@ export default function HomePage() {
 	const [cartProductIds, setCartProductIds] = useState<string[]>([]);
 	const [cartOpen, setCartOpen] = useState(false);
 	const [cartError, setCartError] = useState("");
-	const isAuthenticated = currentUser !== null;
-	const showAdminDashboard = isAuthenticated && currentUser?.role !== "COUSTOMER";
-	const catalogProducts =
-		!productsLoading && !productsError && products.length === 0
-			? demoProducts
-			: products;
+	const isCustomer = currentUser?.role === "COUSTOMER";
+	const isAdmin =
+		currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN";
+	const catalogProducts = [...products, ...demoProducts];
 	const brands = [
 		...new Set(catalogProducts.map((product) => product.brand).filter(Boolean)),
 	].sort((first, second) => first.localeCompare(second));
@@ -214,6 +214,11 @@ export default function HomePage() {
 	}, []);
 
 	useEffect(() => {
+		const search = new URLSearchParams(window.location.search).get("search");
+		if (search) setProductSearch(search);
+	}, []);
+
+	useEffect(() => {
 		const syncCart = () => {
 			try {
 				const savedCart: unknown = JSON.parse(
@@ -243,12 +248,27 @@ export default function HomePage() {
 
 	return (
 		<div
-			className={`public-home ${isAuthenticated ? "public-home-customer" : ""}`}
+			className={`public-home ${isCustomer || isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
 		>
-			{isAuthenticated && (
+			{(isCustomer || isAdmin) && (
 				<aside className="public-customer-sidebar">
 					<div className="nav-label">WORKSPACE</div>
-					<nav className="main-nav" aria-label="Customer navigation">
+					<nav
+						className="main-nav"
+						aria-label={isAdmin ? "Admin navigation" : "Customer navigation"}
+					>
+						{isAdmin && (
+							<>
+								<Link className="nav-link nav-link-active" href="/">
+									<House size={18} strokeWidth={1.8} />
+									<span>Home</span>
+								</Link>
+								<Link className="nav-link" href="/products/new">
+									<PackagePlus size={18} strokeWidth={1.8} />
+									<span>Add product</span>
+								</Link>
+							</>
+						)}
 						<Link
 							className="nav-link"
 							href="/dashboard"
@@ -258,23 +278,29 @@ export default function HomePage() {
 							<span>Dashboard</span>
 						</Link>
 					</nav>
-					<div className="customer-filter-heading">FILTER PRODUCTS</div>
-					{productFilters}
+					{isCustomer && (
+						<>
+							<div className="customer-filter-heading">FILTER PRODUCTS</div>
+							{productFilters}
+						</>
+					)}
 					<div className="sidebar-spacer" />
 					<div className="sidebar-footer">
-						<Link className="sidebar-profile-link" href="/profile">
-							<span className="user-avatar">
-								{currentUser.imageUrl ? (
-									<img src={currentUser.imageUrl} alt="" />
-								) : (
-									currentUser.name.trim().charAt(0).toUpperCase()
-								)}
-							</span>
-							<span className="user-copy">
-								<strong>{currentUser.name}</strong>
-								<small>{currentUser.role.replaceAll("_", " ")}</small>
-							</span>
-						</Link>
+						{currentUser && (
+							<Link className="sidebar-profile-link" href="/profile">
+								<span className="user-avatar">
+									{currentUser.imageUrl ? (
+										<img src={currentUser.imageUrl} alt="" />
+									) : (
+										currentUser.name.trim().charAt(0).toUpperCase()
+									)}
+								</span>
+								<span className="user-copy">
+									<strong>{currentUser.name}</strong>
+									<small>{currentUser.role.replaceAll("_", " ")}</small>
+								</span>
+							</Link>
+						)}
 						<button
 							className="icon-button logout-button"
 							type="button"
@@ -293,7 +319,7 @@ export default function HomePage() {
 					)}
 				</aside>
 			)}
-			{isAuthenticated ? (
+			{isCustomer ? (
 				<header className="topbar public-customer-navbar">
 					<Link className="brand public-customer-brand" href="/" aria-label="Noviq home">
 						<span className="brand-mark">
@@ -366,6 +392,36 @@ export default function HomePage() {
 						)}
 					</div>
 				</header>
+			) : isAdmin ? (
+				<header className="topbar public-customer-navbar">
+					<Link className="brand public-customer-brand" href="/" aria-label="Noviq home">
+						<span className="brand-mark">
+							<Sparkles size={18} />
+						</span>
+						<span className="brand-name">
+							noviq<span>.</span>
+						</span>
+					</Link>
+					<label className="customer-navbar-search">
+						<Search size={17} aria-hidden="true" />
+						<input
+							type="search"
+							placeholder="Search products..."
+							aria-label="Search products"
+							value={productSearch}
+							onChange={(event) => setProductSearch(event.target.value)}
+						/>
+					</label>
+					<div className="customer-navbar-actions">
+						{currentUser && (
+							<AccountMenu
+								user={currentUser}
+								onLogout={() => void handleLogout()}
+								logoutPending={loggingOut}
+							/>
+						)}
+					</div>
+				</header>
 			) : (
 				<header className="public-topbar">
 					<Link className="brand public-brand" href="/" aria-label="Noviq home">
@@ -380,10 +436,19 @@ export default function HomePage() {
 						<Link className="public-nav-current" href="/">
 							Home
 						</Link>
-						{showAdminDashboard ? (
-							<Link className="button button-primary" href="/dashboard">
-								Dashboard <ArrowUpRight size={15} />
-							</Link>
+						{currentUser ? (
+							<>
+								{currentUser.role !== "COUSTOMER" && (
+									<Link className="button button-primary" href="/dashboard">
+										Dashboard <ArrowUpRight size={15} />
+									</Link>
+								)}
+								<AccountMenu
+									user={currentUser}
+									onLogout={() => void handleLogout()}
+									logoutPending={loggingOut}
+								/>
+							</>
 						) : (
 							<div className="public-auth-links">
 								<Link className="button button-quiet" href="/login">
@@ -398,8 +463,8 @@ export default function HomePage() {
 				</header>
 			)}
 
-			<main className={`public-dashboard ${isAuthenticated ? "public-storefront-dashboard" : ""}`}>
-				{!isAuthenticated && !sessionLoading && <section className="public-hero">
+			<main className={`public-dashboard ${isCustomer ? "public-storefront-dashboard" : ""}`}>
+				{!isCustomer && !sessionLoading && <section className="public-hero">
 					<div className="public-hero-copy">
 						<div className="eyebrow">
 							<span className="eyebrow-dot" /> BUSINESS INTELLIGENCE, IN FOCUS
@@ -467,7 +532,7 @@ export default function HomePage() {
 				</section>}
 
 				<section className="public-products" aria-labelledby="public-products-title">
-					{isAuthenticated && (
+					{isCustomer && (
 						<div className="customer-mobile-filters">
 							<strong>Filter products</strong>
 							{productFilters}
@@ -475,11 +540,11 @@ export default function HomePage() {
 					)}
 					<div className="public-section-heading">
 						<div>
-							{!isAuthenticated && (
+							{!isCustomer && (
 								<div className="eyebrow">FEATURED FOR YOU</div>
 							)}
 							<h2 id="public-products-title">
-								{isAuthenticated ? "Shop products" : "Explore our products."}
+								{isCustomer ? "Shop products" : "Explore our products."}
 							</h2>
 						</div>
 						<span>
@@ -487,15 +552,17 @@ export default function HomePage() {
 							{filteredProducts.length === 1 ? "product" : "products"} found
 						</span>
 					</div>
-					{productsLoading ? (
-						<p className="public-products-message" role="status">
-							Loading products…
-						</p>
-					) : productsError ? (
+					{productsError && (
 						<p className="public-products-message public-products-error" role="alert">
-							{productsError}
+							{productsError} Showing sample products while the live catalog is unavailable.
 						</p>
-					) : filteredProducts.length ? (
+					)}
+					{productsLoading && (
+						<p className="public-products-message" role="status">
+							Loading live products. Sample products are available below.
+						</p>
+					)}
+					{filteredProducts.length ? (
 						<div className="public-product-grid">
 							{filteredProducts.map((product) => (
 								<Link
@@ -536,7 +603,7 @@ export default function HomePage() {
 					)}
 				</section>
 
-				{!isAuthenticated && !sessionLoading && <section className="public-capabilities" aria-label="What you can do">
+				{!isCustomer && !sessionLoading && <section className="public-capabilities" aria-label="What you can do">
 					<div className="public-section-heading">
 						<div>
 							<div className="eyebrow">ONE PLACE TO FIND THE SIGNAL</div>
@@ -560,13 +627,13 @@ export default function HomePage() {
 
 			{!sessionLoading && (
 				<footer
-					className={`public-footer ${isAuthenticated ? "public-customer-footer" : ""}`}
+					className={`public-footer ${isCustomer ? "public-customer-footer" : ""}`}
 				>
 					<span>
 						<Sparkles size={13} /> NOVIQ
 					</span>
 					<span>
-						{isAuthenticated ? (
+						{isCustomer ? (
 							<>
 								Developed by <strong>Rakib, Asad &amp; Rasel</strong>
 							</>

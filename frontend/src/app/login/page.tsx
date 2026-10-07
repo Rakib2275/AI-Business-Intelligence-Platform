@@ -35,7 +35,9 @@ export default function LoginPage() {
 			window.location.assign(
 				isCheckoutPath && user.role === "COUSTOMER"
 					? nextPath
-					: "/",
+					: user.role === "COUSTOMER"
+						? "/"
+						: "/dashboard",
 			);
 		} catch (caught) {
 			setError(
@@ -142,6 +144,7 @@ export default function LoginPage() {
 						</div>
 						<div className="label-line">
 							<label htmlFor="password">Password</label>
+							<Link href="/forgot-password">Forgot password?</Link>
 						</div>
 						<div className="input-with-icon">
 							<LockKeyhole size={17} />
