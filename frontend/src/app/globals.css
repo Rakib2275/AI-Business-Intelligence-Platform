@@ -407,6 +407,91 @@ summary:focus-visible {
 	border-radius: inherit;
 	object-fit: cover;
 }
+.account-menu {
+	position: relative;
+	flex: 0 0 auto;
+}
+.account-menu-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px;
+	border: 0;
+	border-radius: 20px;
+	color: #687469;
+	background: transparent;
+	cursor: pointer;
+}
+.account-menu-trigger:hover,
+.account-menu-trigger:focus-visible,
+.account-menu-trigger[aria-expanded="true"] {
+	background: #f1f5f2;
+	outline: none;
+}
+.account-menu-chevron {
+	font-size: 14px;
+	line-height: 1;
+}
+.account-menu-popover {
+	position: absolute;
+	z-index: 40;
+	top: calc(100% + 9px);
+	right: 0;
+	display: grid;
+	width: 205px;
+	gap: 3px;
+	padding: 7px;
+	border: 1px solid #e8ece9;
+	border-radius: 10px;
+	background: #fff;
+	box-shadow: 0 14px 35px rgb(31 41 55 / 14%);
+}
+.account-menu-identity {
+	display: grid;
+	gap: 4px;
+	padding: 9px 9px 11px;
+	border-bottom: 1px solid #edf0ee;
+}
+.account-menu-identity strong {
+	overflow: hidden;
+	color: #354139;
+	font-size: 11px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.account-menu-identity small {
+	overflow: hidden;
+	color: #87918a;
+	font-size: 10px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.account-menu-popover [role="menuitem"] {
+	display: flex;
+	min-height: 35px;
+	align-items: center;
+	gap: 9px;
+	padding: 0 9px;
+	border: 0;
+	border-radius: 6px;
+	color: #4c574f;
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	text-align: left;
+	text-decoration: none;
+}
+.account-menu-popover [role="menuitem"]:hover:not(:disabled),
+.account-menu-popover [role="menuitem"]:focus-visible {
+	color: #315e46;
+	background: #f2f7f3;
+	outline: none;
+}
+.account-menu-popover [role="menuitem"]:disabled {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
 .profile-avatar-hint {
 	position: absolute;
 	top: calc(100% + 9px);
@@ -1655,6 +1740,15 @@ summary:focus-visible {
 	color: #465062;
 	font-size: 10px;
 	font-weight: 600;
+}
+.label-line a {
+	color: #658d72;
+	font-size: 10px;
+	font-weight: 600;
+}
+.label-line a:hover {
+	color: #3f7053;
+	text-decoration: underline;
 }
 .login-submit {
 	width: 100%;
@@ -3710,8 +3804,33 @@ summary:focus-visible {
 	.topbar-right {
 		gap: 9px;
 	}
+	.workspace-search {
+		width: min(190px, 35vw);
+		height: 32px;
+		gap: 6px;
+		padding: 0 8px;
+	}
+	.workspace-search input {
+		font-size: 10px;
+	}
 	.live-indicator {
 		display: none;
+	}
+	.add-product-form {
+		padding: 18px;
+	}
+	.add-product-fields {
+		grid-template-columns: 1fr;
+		gap: 13px;
+	}
+	.add-product-description {
+		grid-column: auto;
+	}
+	.add-product-photo {
+		flex-wrap: wrap;
+	}
+	.add-product-photo .button {
+		margin-left: auto;
 	}
 	.topbar-avatar {
 		width: 25px;
@@ -4023,6 +4142,9 @@ summary:focus-visible {
 }
 .public-home-customer {
 	padding-left: 254px;
+}
+.public-home-storefront {
+	padding-bottom: 76px;
 }
 .public-customer-sidebar {
 	position: fixed;
@@ -5152,11 +5274,16 @@ summary:focus-visible {
 	color: #6d9c80;
 }
 .public-customer-footer {
-	position: relative;
+	position: fixed;
+	z-index: 12;
+	right: 0;
+	bottom: 0;
+	left: 254px;
 	min-height: 76px;
 	padding: 0 42px;
 	border-top-color: #e4e9e5;
-	background: rgb(255 255 255 / 72%);
+	background: rgb(255 255 255 / 94%);
+	backdrop-filter: blur(14px);
 	font-size: 12px;
 }
 .public-customer-footer > span:first-child {
@@ -5170,6 +5297,136 @@ summary:focus-visible {
 .public-customer-footer strong {
 	color: #4d6758;
 	font-weight: 700;
+}
+
+.workspace-search {
+	display: flex;
+	width: min(350px, 34vw);
+	height: 36px;
+	align-items: center;
+	gap: 9px;
+	margin-left: auto;
+	padding: 0 11px;
+	border: 1px solid #e3e7e5;
+	border-radius: 8px;
+	color: #87928c;
+	background: #f8faf9;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.workspace-search:focus-within {
+	border-color: #9ac5a9;
+	box-shadow: 0 0 0 3px rgb(103 157 121 / 12%);
+}
+.workspace-search input {
+	width: 100%;
+	min-width: 0;
+	border: 0;
+	outline: 0;
+	color: #3d4654;
+	background: transparent;
+	font: inherit;
+	font-size: 11px;
+}
+.workspace-search input::placeholder {
+	color: #9aa39e;
+}
+.add-product-form {
+	display: grid;
+	max-width: 900px;
+	gap: 22px;
+	margin: 0 auto;
+	padding: 24px;
+}
+.add-product-fields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 17px;
+}
+.add-product-fields > label {
+	display: grid;
+	min-width: 0;
+	gap: 7px;
+	color: #465062;
+	font-size: 11px;
+	font-weight: 600;
+}
+.add-product-fields input,
+.add-product-fields textarea {
+	width: 100%;
+	min-height: 40px;
+	padding: 9px 11px;
+	border: 1px solid #e1e4e8;
+	border-radius: 8px;
+	outline: 0;
+	color: #303a49;
+	background: #fff;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 400;
+}
+.add-product-fields textarea {
+	min-height: 105px;
+	resize: vertical;
+}
+.add-product-fields input:focus,
+.add-product-fields textarea:focus {
+	border-color: #a1b7aa;
+	box-shadow: 0 0 0 3px rgb(91 142 111 / 9%);
+}
+.add-product-description {
+	grid-column: 1 / -1;
+}
+.add-product-photo {
+	display: flex;
+	min-height: 92px;
+	align-items: center;
+	gap: 15px;
+	padding: 13px;
+	border: 1px dashed #d8dfe2;
+	border-radius: 9px;
+	background: #fafbfb;
+}
+.add-product-photo-preview {
+	display: grid;
+	width: 64px;
+	height: 64px;
+	flex: 0 0 64px;
+	overflow: hidden;
+	place-items: center;
+	border: 1px solid #e1e9e4;
+	border-radius: 8px;
+	color: #7d9184;
+	background: #f0f5f1;
+}
+.add-product-photo-preview img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.add-product-photo-copy {
+	min-width: 0;
+	flex: 1;
+}
+.add-product-photo-copy strong {
+	display: block;
+	overflow: hidden;
+	margin-bottom: 4px;
+	color: #445063;
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.add-product-photo-copy p {
+	margin: 0;
+	color: #87909e;
+	font-size: 10px;
+	line-height: 1.6;
+}
+.add-product-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 10px;
 }
 
 @media (max-width: 900px) {
@@ -5204,6 +5461,9 @@ summary:focus-visible {
 @media (max-width: 680px) {
 	.public-home-customer {
 		padding-left: 64px;
+	}
+	.public-home-storefront {
+		padding-bottom: 68px;
 	}
 	.public-customer-sidebar {
 		width: 64px;
@@ -5433,6 +5693,8 @@ summary:focus-visible {
 		padding: 0 18px;
 	}
 	.public-customer-footer {
+		right: 0;
+		left: 64px;
 		min-height: 68px;
 		padding: 10px 14px;
 		font-size: 10px;

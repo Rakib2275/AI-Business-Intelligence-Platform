@@ -7,9 +7,11 @@ import {
 	ArrowUpRight,
 	BarChart3,
 	Database,
+	House,
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
+	PackagePlus,
 	Search,
 	ShoppingCart,
 	Sparkles,
@@ -17,6 +19,7 @@ import {
 import { ApiError, apiRequest } from "@/lib/api";
 import { demoProducts } from "@/lib/demo-products";
 import type { Product, User } from "@/lib/types";
+import { AccountMenu } from "@/components/account-menu";
 
 const capabilities = [
 	{
@@ -53,10 +56,9 @@ export default function HomePage() {
 	const [cartOpen, setCartOpen] = useState(false);
 	const [cartError, setCartError] = useState("");
 	const isCustomer = currentUser?.role === "COUSTOMER";
-	const catalogProducts =
-		!productsLoading && !productsError && products.length === 0
-			? demoProducts
-			: products;
+	const isAdmin =
+		currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN";
+	const catalogProducts = [...products, ...demoProducts];
 	const brands = [
 		...new Set(catalogProducts.map((product) => product.brand).filter(Boolean)),
 	].sort((first, second) => first.localeCompare(second));
@@ -212,6 +214,11 @@ export default function HomePage() {
 	}, []);
 
 	useEffect(() => {
+		const search = new URLSearchParams(window.location.search).get("search");
+		if (search) setProductSearch(search);
+	}, []);
+
+	useEffect(() => {
 		const syncCart = () => {
 			try {
 				const savedCart: unknown = JSON.parse(
@@ -241,12 +248,27 @@ export default function HomePage() {
 
 	return (
 		<div
-			className={`public-home ${isCustomer ? "public-home-customer" : ""}`}
+			className={`public-home ${isCustomer || isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
 		>
-			{isCustomer && (
+			{(isCustomer || isAdmin) && (
 				<aside className="public-customer-sidebar">
 					<div className="nav-label">WORKSPACE</div>
-					<nav className="main-nav" aria-label="Customer navigation">
+					<nav
+						className="main-nav"
+						aria-label={isAdmin ? "Admin navigation" : "Customer navigation"}
+					>
+						{isAdmin && (
+							<>
+								<Link className="nav-link nav-link-active" href="/">
+									<House size={18} strokeWidth={1.8} />
+									<span>Home</span>
+								</Link>
+								<Link className="nav-link" href="/products/new">
+									<PackagePlus size={18} strokeWidth={1.8} />
+									<span>Add product</span>
+								</Link>
+							</>
+						)}
 						<Link
 							className="nav-link"
 							href="/dashboard"
@@ -256,23 +278,29 @@ export default function HomePage() {
 							<span>Dashboard</span>
 						</Link>
 					</nav>
-					<div className="customer-filter-heading">FILTER PRODUCTS</div>
-					{productFilters}
+					{isCustomer && (
+						<>
+							<div className="customer-filter-heading">FILTER PRODUCTS</div>
+							{productFilters}
+						</>
+					)}
 					<div className="sidebar-spacer" />
 					<div className="sidebar-footer">
-						<Link className="sidebar-profile-link" href="/profile">
-							<span className="user-avatar">
-								{currentUser.imageUrl ? (
-									<img src={currentUser.imageUrl} alt="" />
-								) : (
-									currentUser.name.trim().charAt(0).toUpperCase()
-								)}
-							</span>
-							<span className="user-copy">
-								<strong>{currentUser.name}</strong>
-								<small>Customer</small>
-							</span>
-						</Link>
+						{currentUser && (
+							<Link className="sidebar-profile-link" href="/profile">
+								<span className="user-avatar">
+									{currentUser.imageUrl ? (
+										<img src={currentUser.imageUrl} alt="" />
+									) : (
+										currentUser.name.trim().charAt(0).toUpperCase()
+									)}
+								</span>
+								<span className="user-copy">
+									<strong>{currentUser.name}</strong>
+									<small>{currentUser.role.replaceAll("_", " ")}</small>
+								</span>
+							</Link>
+						)}
 						<button
 							className="icon-button logout-button"
 							type="button"
@@ -355,24 +383,43 @@ export default function HomePage() {
 								</div>
 							)}
 						</div>
-						<Link
-							className="customer-navbar-profile"
-							href="/profile"
-							aria-label="Open profile"
-							title={currentUser.name}
-						>
-							<span className="topbar-avatar">
-								{currentUser.imageUrl ? (
-									<img src={currentUser.imageUrl} alt="" />
-								) : (
-									currentUser.name.trim().charAt(0).toUpperCase()
-								)}
-							</span>
-							<span className="customer-navbar-user">
-								<strong>{currentUser.name}</strong>
-								<small>Customer</small>
-							</span>
-						</Link>
+						{currentUser && (
+							<AccountMenu
+								user={currentUser}
+								onLogout={() => void handleLogout()}
+								logoutPending={loggingOut}
+							/>
+						)}
+					</div>
+				</header>
+			) : isAdmin ? (
+				<header className="topbar public-customer-navbar">
+					<Link className="brand public-customer-brand" href="/" aria-label="Noviq home">
+						<span className="brand-mark">
+							<Sparkles size={18} />
+						</span>
+						<span className="brand-name">
+							noviq<span>.</span>
+						</span>
+					</Link>
+					<label className="customer-navbar-search">
+						<Search size={17} aria-hidden="true" />
+						<input
+							type="search"
+							placeholder="Search products..."
+							aria-label="Search products"
+							value={productSearch}
+							onChange={(event) => setProductSearch(event.target.value)}
+						/>
+					</label>
+					<div className="customer-navbar-actions">
+						{currentUser && (
+							<AccountMenu
+								user={currentUser}
+								onLogout={() => void handleLogout()}
+								logoutPending={loggingOut}
+							/>
+						)}
 					</div>
 				</header>
 			) : (
@@ -389,11 +436,20 @@ export default function HomePage() {
 						<Link className="public-nav-current" href="/">
 							Home
 						</Link>
-						{currentUser && currentUser.role !== "COUSTOMER" ? (
-							<Link className="button button-primary" href="/dashboard">
-								Dashboard <ArrowUpRight size={15} />
-							</Link>
-						) : !currentUser ? (
+						{currentUser ? (
+							<>
+								{currentUser.role !== "COUSTOMER" && (
+									<Link className="button button-primary" href="/dashboard">
+										Dashboard <ArrowUpRight size={15} />
+									</Link>
+								)}
+								<AccountMenu
+									user={currentUser}
+									onLogout={() => void handleLogout()}
+									logoutPending={loggingOut}
+								/>
+							</>
+						) : (
 							<div className="public-auth-links">
 								<Link className="button button-quiet" href="/login">
 									Log in
@@ -402,7 +458,7 @@ export default function HomePage() {
 									Sign up <ArrowUpRight size={15} />
 								</Link>
 							</div>
-						) : null}
+						)}
 					</nav>
 				</header>
 			)}
@@ -496,15 +552,17 @@ export default function HomePage() {
 							{filteredProducts.length === 1 ? "product" : "products"} found
 						</span>
 					</div>
-					{productsLoading ? (
-						<p className="public-products-message" role="status">
-							Loading products…
-						</p>
-					) : productsError ? (
+					{productsError && (
 						<p className="public-products-message public-products-error" role="alert">
-							{productsError}
+							{productsError} Showing sample products while the live catalog is unavailable.
 						</p>
-					) : filteredProducts.length ? (
+					)}
+					{productsLoading && (
+						<p className="public-products-message" role="status">
+							Loading live products. Sample products are available below.
+						</p>
+					)}
+					{filteredProducts.length ? (
 						<div className="public-product-grid">
 							{filteredProducts.map((product) => (
 								<Link

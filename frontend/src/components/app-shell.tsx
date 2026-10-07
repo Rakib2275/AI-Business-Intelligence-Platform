@@ -11,21 +11,24 @@ import {
 	Command,
 	Database,
 	House,
-	ImagePlus,
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
+	PackagePlus,
+	Search,
 	ShieldCheck,
 	Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useSession } from "@/lib/session";
+import { AccountMenu } from "@/components/account-menu";
 
 const navItems = [
 	{ label: "Home", href: "/", icon: House },
 	{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 	{ label: "Ask your data", href: "/conversations", icon: MessageSquareText },
 	{ label: "Dashboards", href: "/dashboards", icon: BarChart3 },
+	{ label: "Add product", href: "/products/new", icon: PackagePlus, admin: true },
 	{ label: "Audit trail", href: "/audit", icon: ShieldCheck, admin: true },
 ];
 
@@ -35,10 +38,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	const { user, logout } = useSession();
 	const [logoutError, setLogoutError] = useState("");
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
 	const visibleItems = navItems.filter(
 		(item) =>
 			!item.admin || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",
 	);
+	const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 	const initial = user?.name.trim().charAt(0).toUpperCase() || "U";
 	const pageName =
 		pathname.startsWith("/profile-picture")
@@ -60,10 +65,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 		}
 	};
 
+	const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		const query = searchQuery.trim();
+		if (!query) return;
+		router.push(`/?search=${encodeURIComponent(query)}`);
+	};
+
 	return (
 		<div className="workspace">
 			<aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
-				<Link className="brand" href="/dashboard" aria-label="Noviq home">
+				<Link className="brand" href="/" aria-label="Noviq home">
 					<span className="brand-mark">
 						<Sparkles size={18} />
 					</span>
@@ -153,27 +165,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						<span className="crumb-slash">/</span>
 						<strong>{pageName}</strong>
 					</div>
+					{isAdmin && (
+						<form className="workspace-search" role="search" onSubmit={handleSearch}>
+							<Search size={16} aria-hidden="true" />
+							<input
+								type="search"
+								aria-label="Search products"
+								placeholder="Search products..."
+								value={searchQuery}
+								onChange={(event) => setSearchQuery(event.target.value)}
+							/>
+						</form>
+					)}
 					<div className="topbar-right">
 						<div className="live-indicator">
 							<span /> All systems operational
 						</div>
-						<Link
-							className="profile-avatar-link"
-							href="/profile-picture"
-							aria-label="Change profile picture"
-							title="Change profile picture"
-						>
-							<span className="topbar-avatar">
-								{user?.imageUrl ? (
-									<img src={user.imageUrl} alt="" />
-								) : (
-									initial
-								)}
-							</span>
-							<span className="profile-avatar-hint">
-								<ImagePlus size={13} /> Change photo
-							</span>
-						</Link>
+						{user && (
+							<AccountMenu
+								user={user}
+								onLogout={() => void handleLogout()}
+							/>
+						)}
 					</div>
 				</header>
 				<main className="main-content">{children}</main>

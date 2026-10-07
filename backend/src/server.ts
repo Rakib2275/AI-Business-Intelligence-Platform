@@ -4,7 +4,7 @@ import config from "./app/config";
 import { transporter } from "./app/lib/nodeMailer";
 import { prisma } from "./app/lib/prisma";
 import { redisClient } from "./app/lib/redis";
-import { seedSuperAdmin } from "./app/utils/seed";
+import { seedAdmin, seedSuperAdmin } from "./app/utils/seed";
 
 const PORT = config.port;
 
@@ -19,7 +19,8 @@ const main = async () => {
 		await transporter.verify();
 		console.log("NodeMailer Connect Successfully")
 
-		await seedSuperAdmin()
+		await seedSuperAdmin();
+		await seedAdmin();
 
 		app.listen(PORT, () => {
 			console.log(`Server is running on port ${PORT}`);

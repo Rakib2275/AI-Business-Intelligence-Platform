@@ -181,7 +181,7 @@ const forgotPassword = catchAsync(async (req: Request, res: Response) => {
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
-		message: `OTP Sent To Email : ${payload.email}`,
+		message: "If an active account exists for that email, a reset code has been sent.",
 		data: null
 	});
 });
