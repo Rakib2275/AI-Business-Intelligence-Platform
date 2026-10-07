@@ -35,9 +35,7 @@ export default function LoginPage() {
 			window.location.assign(
 				isCheckoutPath && user.role === "COUSTOMER"
 					? nextPath
-					: user.role === "COUSTOMER"
-						? "/"
-						: "/dashboard",
+					: "/",
 			);
 		} catch (caught) {
 			setError(

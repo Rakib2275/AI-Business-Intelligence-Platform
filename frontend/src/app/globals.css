@@ -407,6 +407,91 @@ summary:focus-visible {
 	border-radius: inherit;
 	object-fit: cover;
 }
+.account-menu {
+	position: relative;
+	flex: 0 0 auto;
+}
+.account-menu-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px;
+	border: 0;
+	border-radius: 20px;
+	color: #687469;
+	background: transparent;
+	cursor: pointer;
+}
+.account-menu-trigger:hover,
+.account-menu-trigger:focus-visible,
+.account-menu-trigger[aria-expanded="true"] {
+	background: #f1f5f2;
+	outline: none;
+}
+.account-menu-chevron {
+	font-size: 14px;
+	line-height: 1;
+}
+.account-menu-popover {
+	position: absolute;
+	z-index: 40;
+	top: calc(100% + 9px);
+	right: 0;
+	display: grid;
+	width: 205px;
+	gap: 3px;
+	padding: 7px;
+	border: 1px solid #e8ece9;
+	border-radius: 10px;
+	background: #fff;
+	box-shadow: 0 14px 35px rgb(31 41 55 / 14%);
+}
+.account-menu-identity {
+	display: grid;
+	gap: 4px;
+	padding: 9px 9px 11px;
+	border-bottom: 1px solid #edf0ee;
+}
+.account-menu-identity strong {
+	overflow: hidden;
+	color: #354139;
+	font-size: 11px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.account-menu-identity small {
+	overflow: hidden;
+	color: #87918a;
+	font-size: 10px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.account-menu-popover [role="menuitem"] {
+	display: flex;
+	min-height: 35px;
+	align-items: center;
+	gap: 9px;
+	padding: 0 9px;
+	border: 0;
+	border-radius: 6px;
+	color: #4c574f;
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	text-align: left;
+	text-decoration: none;
+}
+.account-menu-popover [role="menuitem"]:hover:not(:disabled),
+.account-menu-popover [role="menuitem"]:focus-visible {
+	color: #315e46;
+	background: #f2f7f3;
+	outline: none;
+}
+.account-menu-popover [role="menuitem"]:disabled {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
 .profile-avatar-hint {
 	position: absolute;
 	top: calc(100% + 9px);

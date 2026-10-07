@@ -11,7 +11,6 @@ import {
 	Command,
 	Database,
 	House,
-	ImagePlus,
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useSession } from "@/lib/session";
+import { AccountMenu } from "@/components/account-menu";
 
 const navItems = [
 	{ label: "Home", href: "/", icon: House },
@@ -157,23 +157,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						<div className="live-indicator">
 							<span /> All systems operational
 						</div>
-						<Link
-							className="profile-avatar-link"
-							href="/profile-picture"
-							aria-label="Change profile picture"
-							title="Change profile picture"
-						>
-							<span className="topbar-avatar">
-								{user?.imageUrl ? (
-									<img src={user.imageUrl} alt="" />
-								) : (
-									initial
-								)}
-							</span>
-							<span className="profile-avatar-hint">
-								<ImagePlus size={13} /> Change photo
-							</span>
-						</Link>
+						{user && (
+							<AccountMenu
+								user={user}
+								onLogout={() => void handleLogout()}
+							/>
+						)}
 					</div>
 				</header>
 				<main className="main-content">{children}</main>
