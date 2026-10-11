@@ -68,7 +68,7 @@ export default function LoginPage() {
 					<h1>
 						Clarity starts
 						<br />
-						with a <span>better question.</span>
+						with a <span>better questions.</span>
 					</h1>
 					<p>
 						Your data has a story. Ask it in plain language, discover the
