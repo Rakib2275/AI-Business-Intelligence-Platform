@@ -154,13 +154,26 @@ export default function CheckoutPage() {
 								})}
 							</strong>
 						</div>
-						<div className="checkout-payment-method">
+						<p className="checkout-payment-label">Choose a payment method</p>
+						<div
+							className="checkout-payment-method"
+							role="radiogroup"
+							aria-label="Choose a payment method"
+						>
 							<span className="bkash-wordmark">bKash</span>
 							<span>
 								<strong>Pay with bKash</strong>
 								<small>Secure mobile payment</small>
 							</span>
-							<span className="checkout-radio" />
+							<input
+								className="checkout-radio"
+								type="radio"
+								name="payment-method"
+								value="bkash"
+								checked
+								readOnly
+								aria-label="Pay with bKash"
+							/>
 						</div>
 						{isSample ? (
 							<p className="checkout-notice">

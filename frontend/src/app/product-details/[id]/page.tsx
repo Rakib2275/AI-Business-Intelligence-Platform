@@ -12,6 +12,7 @@ import {
 	Tag,
 } from "lucide-react";
 import { ApiError, apiRequest } from "@/lib/api";
+import { addCartProduct, getCartProductIds } from "@/lib/cart";
 import { demoProducts } from "@/lib/demo-products";
 import type { Product } from "@/lib/types";
 
@@ -21,23 +22,30 @@ export default function ProductDetailsPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [cartMessage, setCartMessage] = useState("");
+	const [cartCount, setCartCount] = useState(0);
+
+	useEffect(() => {
+		const syncCart = () => {
+			try {
+				setCartCount(getCartProductIds().length);
+			} catch (caught) {
+				console.error("Could not load the saved cart:", caught);
+			}
+		};
+
+		syncCart();
+		window.addEventListener("storage", syncCart);
+		window.addEventListener("noviq:cart-updated", syncCart);
+		return () => {
+			window.removeEventListener("storage", syncCart);
+			window.removeEventListener("noviq:cart-updated", syncCart);
+		};
+	}, []);
 
 	const addToCart = () => {
 		if (!product) return;
 		try {
-			const savedCart: unknown = JSON.parse(
-				window.localStorage.getItem("noviq:cart") ?? "[]",
-			);
-			const cart = Array.isArray(savedCart)
-				? savedCart.filter(
-						(item): item is string =>
-							typeof item === "string" && item !== product.id,
-					)
-				: [];
-			window.localStorage.setItem(
-				"noviq:cart",
-				JSON.stringify([...cart, product.id]),
-			);
+			setCartCount(addCartProduct(product.id).length);
 			setCartMessage("Added to cart");
 			window.setTimeout(() => setCartMessage(""), 2500);
 		} catch (caught) {
@@ -97,6 +105,9 @@ export default function ProductDetailsPage() {
 				</div>
 				<Link className="product-details-back" href="/">
 					<ArrowLeft size={15} /> Back to products
+				</Link>
+				<Link className="product-details-cart-link" href="/cart">
+					<ShoppingCart size={16} /> Cart <span>{cartCount}</span>
 				</Link>
 			</header>
 
@@ -177,7 +188,7 @@ export default function ProductDetailsPage() {
 									) : (
 										<ShoppingCart size={17} />
 									)}
-									{cartMessage === "Added to cart" ? "Added to cart" : "Add Cart"}
+									{cartMessage === "Added to cart" ? "Added to cart" : "Add to Cart"}
 								</button>
 								<Link
 									className="button button-primary"

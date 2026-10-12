@@ -451,6 +451,12 @@ export default function HomePage() {
 							</>
 						) : (
 							<div className="public-auth-links">
+								<Link className="button button-quiet" href="/cart">
+									<ShoppingCart size={15} /> Cart
+									{cartProductIds.length > 0 && (
+										<span className="public-cart-count">{cartProductIds.length}</span>
+									)}
+								</Link>
 								<Link className="button button-quiet" href="/login">
 									Log in
 								</Link>
