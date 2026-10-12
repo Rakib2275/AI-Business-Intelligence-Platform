@@ -2,7 +2,7 @@ import { Router } from "express";
 import { Role } from "../../../generated/prisma/enums.js";
 import { auth } from "../../middleware/checkAuth.js";
 import { AuthController } from "./auth.controller.js";
-import { ForgotPasswordZodSchema, LoginZodSchema, PatienRegistrationZodSchema, PatientEmailVerifyZodSchema, ResetPasswordZodSchema } from "./authValidation.js";
+import { ForgotPasswordZodSchema, LoginZodSchema, PatienRegistrationZodSchema, userEmailVerifyZodSchema, ResetPasswordZodSchema } from "./authValidation.js";
 import { validedRequest } from "../../middleware/validedRequest.js";
 
 const router = Router();
@@ -10,11 +10,11 @@ const router = Router();
 
 router.post("/register",
 	validedRequest(PatienRegistrationZodSchema),
-	 AuthController.registerPatient);
+	 AuthController.registeruser);
 
 router.post("/verify-email",
-	validedRequest(PatientEmailVerifyZodSchema),
-	 AuthController.verifyPatientEmail);
+	validedRequest(userEmailVerifyZodSchema),
+	 AuthController.verifyuserEmail);
 router.post("/login",
 	validedRequest(LoginZodSchema),
 	AuthController.loginUser);

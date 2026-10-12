@@ -45,12 +45,16 @@ const getProviderResponse = async <T>(response: Response): Promise<T> => {
 };
 
 const isBkashCheckoutUrl = (value: string | undefined): value is string => {
-	if (!value) return false;
+	const checkoutUrl = value?.trim();
+	if (!checkoutUrl) return false;
 	try {
-		const url = new URL(value);
+		const url = new URL(checkoutUrl);
 		return (
 			url.protocol === "https:" &&
-			(url.hostname === "bka.sh" || url.hostname.endsWith(".bka.sh"))
+			(url.hostname === "bka.sh" ||
+				url.hostname.endsWith(".bka.sh") ||
+				url.hostname === "bkash.com" ||
+				url.hostname.endsWith(".bkash.com"))
 		);
 	} catch {
 		return false;
@@ -90,31 +94,51 @@ const startProductCheckout = async (userId: string, productId: string) => {
 	});
 
 	try {
-		const response = await fetch(
-			`${config.bkash_base_url}/tokenized/checkout/create`,
-			{
-				method: "POST",
-				headers: await bkashHeaders(),
-				body: JSON.stringify({
-					mode: "0011",
-					payerReference: userId,
-					callbackURL: paymentReturnUrl(order.id),
-					amount: Number(order.amount).toFixed(2),
-					currency: order.currency,
-					intent: "sale",
-					merchantInvoiceNumber: order.merchantInvoiceNumber,
-				}),
-			},
-		);
+		let response: Response;
+		try {
+			response = await fetch(
+				`${config.bkash_base_url}/tokenized/checkout/create`,
+				{
+					method: "POST",
+					headers: await bkashHeaders(),
+					body: JSON.stringify({
+						mode: "0011",
+						payerReference: userId,
+						callbackURL: paymentReturnUrl(order.id),
+						amount: Number(order.amount).toFixed(2),
+						currency: order.currency,
+						intent: "sale",
+						merchantInvoiceNumber: order.merchantInvoiceNumber,
+					}),
+				},
+			);
+		} catch (error) {
+			if (error instanceof AppError) throw error;
+			throw new AppError("Could not connect to the bKash payment service.", 502);
+		}
 		const result = await getProviderResponse<BkashCreateResponse>(response);
 
-		if (
-			result.statusCode !== "0000" ||
-			!result.paymentID ||
-			!isBkashCheckoutUrl(result.bkashURL)
-		) {
+		const statusCode = result.statusCode?.trim();
+		if (statusCode !== "0000") {
+			const statusMessage =
+				result.statusMessage &&
+				!/^(successful|success)$/i.test(result.statusMessage.trim())
+					? result.statusMessage
+					: `bKash returned an unexpected checkout status (code: ${statusCode || "missing"}).`;
 			throw new AppError(
-				result.statusMessage || "Could not start bKash checkout.",
+				statusMessage,
+				502,
+			);
+		}
+		if (typeof result.paymentID !== "string" || !result.paymentID.trim()) {
+			throw new AppError(
+				"bKash accepted the checkout request but did not return a payment ID.",
+				502,
+			);
+		}
+		if (!isBkashCheckoutUrl(result.bkashURL)) {
+			throw new AppError(
+				"bKash accepted the checkout request but did not return a valid checkout URL.",
 				502,
 			);
 		}
@@ -124,7 +148,7 @@ const startProductCheckout = async (userId: string, productId: string) => {
 			data: { bkashPaymentId: result.paymentID },
 		});
 
-		return { orderId: order.id, paymentUrl: result.bkashURL };
+		return { orderId: order.id, paymentUrl: result.bkashURL.trim() };
 	} catch (error) {
 		await prisma.productOrder.update({
 			where: { id: order.id },

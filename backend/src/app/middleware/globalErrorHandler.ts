@@ -7,7 +7,7 @@ import { AppError } from "../utils/appError.js";
 
 export const globalErrorHandler = async (
 	err: unknown,
-	_req: Request,
+	req: Request,
 	res: Response,
 	_next: NextFunction,
 ) => {
@@ -25,6 +25,7 @@ export const globalErrorHandler = async (
 	if (typeof providedStatus === "number") statusCode = providedStatus;
 	const isMalformedJson =
 		err instanceof SyntaxError && errorDetails.type === "entity.parse.failed";
+	let isDatabaseSchemaError = false;
 
 	if (isMalformedJson) {
 		statusCode = httpStatus.BAD_REQUEST;
@@ -48,6 +49,11 @@ export const globalErrorHandler = async (
 		} else if (err.code === "P2025") {
 			statusCode = httpStatus.NOT_FOUND;
 			errorMessage = "The requested record was not found.";
+		} else if (err.code === "P2021" || err.code === "P2022") {
+			statusCode = httpStatus.SERVICE_UNAVAILABLE;
+			errorMessage =
+				"Payment storage is not ready. Apply the pending database migrations and try again.";
+			isDatabaseSchemaError = true;
 		}
 	} else if (err instanceof Prisma.PrismaClientInitializationError) {
 		if (err.errorCode === "P1000") {
@@ -65,11 +71,20 @@ export const globalErrorHandler = async (
 		errorMessage = err.message;
 	}
 
-	if (
-		config.node_env === "development" &&
-		statusCode >= httpStatus.INTERNAL_SERVER_ERROR
-	) {
-		console.error("Error from Global Error Handler", err);
+	if (statusCode >= httpStatus.INTERNAL_SERVER_ERROR) {
+		if (config.node_env === "development") {
+			console.error("Error from Global Error Handler", err);
+		} else {
+			console.error("Unhandled API error", {
+				method: req.method,
+				path: req.path,
+				name: err instanceof Error ? err.name : "UnknownError",
+				prismaCode:
+					err instanceof Prisma.PrismaClientKnownRequestError
+						? err.code
+						: undefined,
+			});
+		}
 	}
 
 	res.status(statusCode).json({
@@ -83,7 +98,10 @@ export const globalErrorHandler = async (
 					: "Internal Server Error"
 			: "Internal Server Error",
 		message:
-			config.node_env === "development" || statusCode < 500
+			config.node_env === "development" ||
+			statusCode < 500 ||
+			err instanceof AppError ||
+			isDatabaseSchemaError
 				? errorMessage
 				: "Internal Server Error",
 		error:

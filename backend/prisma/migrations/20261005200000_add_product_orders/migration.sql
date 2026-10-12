@@ -23,7 +23,7 @@ CREATE INDEX "ProductOrder_productId_idx" ON "ProductOrder"("productId");
 
 ALTER TABLE "ProductOrder"
 ADD CONSTRAINT "ProductOrder_userId_fkey"
-FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "ProductOrder"
 ADD CONSTRAINT "ProductOrder_productId_fkey"

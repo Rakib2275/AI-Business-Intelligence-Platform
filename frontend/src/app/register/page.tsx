@@ -41,7 +41,7 @@ export default function RegisterPage() {
 						name,
 						email,
 						password,
-						...(contactNumber ? { patient: { contactNumber } } : {}),
+						...(contactNumber ? { user: { contactNumber } } : {}),
 					},
 				});
 				setStep("verify");
