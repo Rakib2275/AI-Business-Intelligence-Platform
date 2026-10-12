@@ -147,6 +147,10 @@ available in the homepage catalog.
 The checkout uses the configured bKash sandbox credentials and returns to
 `/payment-return` on the frontend. Payment is only marked successful after the
 backend verifies the bKash transaction status, payment ID, invoice, and amount.
+Before enabling checkout in a deployed environment, confirm that its database
+has applied `20261005200000_add_product_orders`, which creates the `ProductOrder`
+table. Run pending migrations only after reviewing them for that environment;
+the earlier BI schema-transition migration can drop legacy tables.
 
 ### Frontend
 
@@ -188,7 +192,7 @@ pnpm build
 **Review the schema-transition migration before applying it to another
 environment.** The project history starts with the earlier healthcare schema;
 `20261004120000_bi_platform_schema` transitions to the active BI schema and drops
-the legacy `patients` and `users` tables. Apply it only where those tables have
+the legacy `users` and `users` tables. Apply it only where those tables have
 been backed up or are confirmed disposable. Never apply it to production without
 an explicit data-retention plan.
 

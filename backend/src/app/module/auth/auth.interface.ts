@@ -5,11 +5,11 @@ export interface ILoginUserPayload {
 	password: string;
 }
 
-export interface IRegisterPatientPayload {
+export interface IRegisteruserPayload {
 	name: string;
 	email: string;
 	password: string;
-	patient : {
+	user : {
 		contactNumber ?: string;
 	}
 }

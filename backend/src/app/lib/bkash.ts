@@ -1,99 +1,130 @@
-import config from "../config/index.js"
-import { redisClient } from "./redis.js"
+import config from "../config/index.js";
+import { AppError } from "../utils/appError.js";
 
-export const getBkashIdToken = async() =>{
-   try {
-     const IdTokenKey="bkash:idToken"
-     const RefreshTokenKey="bkash:refreshToken"
+type BkashTokenResponse = {
+	id_token?: string;
+	refresh_token?: string;
+	expires_in?: number | string;
+	refresh_token_expires_in?: number | string;
+	statusCode?: string;
+	statusMessage?: string;
+};
 
-     let bkashIdToken = await redisClient.get(IdTokenKey);
-     const bkashIdTokenTTL = await redisClient.ttl(IdTokenKey)
-     const bkashRefreshToken = await redisClient.get(RefreshTokenKey)
-     const bkashRefreshTokenTTL = await redisClient.ttl(RefreshTokenKey)
-     
-    //  console.log({
-    //     bkashIdToken,
-    //     bkashIdTokenTTL,
-    //     bkashRefreshToken,
-    //     bkashRefreshTokenTTL
-    //  })
+type CachedTokens = {
+	idToken: string;
+	refreshToken?: string;
+	idTokenExpiresAt: number;
+	refreshTokenExpiresAt: number;
+};
 
-     if((bkashIdTokenTTL <= 600 || !bkashIdToken) && bkashRefreshToken && bkashRefreshTokenTTL){
-        const RefreshTokenResponse = await fetch(`${config.bkash_base_url}/tokenized/checkout/token/refresh`,{
-        method: "POST",
-        headers:{
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            username : config.bkash_username,
-            password : config.bkash_password
-        },
-        body : JSON.stringify({
-            app_key: config.bkash_app_key,
-            app_secret: config.bkash_app_secret,
-            refresh_token: bkashRefreshToken
-        })
-    })
+const tokenRefreshBufferMs = 10 * 60 * 1000;
+let cachedTokens: CachedTokens | undefined;
+let tokenRequest: Promise<string> | undefined;
 
-    if(!RefreshTokenResponse.ok){
-        throw new  Error("Bkash Access Token Grant Failed")
-    }
-    const bkashRefreshTokenResult = await RefreshTokenResponse.json()
+const getExpiry = (seconds: number | string | undefined, fallback: number) => {
+	const duration = Number(seconds);
+	return Number.isFinite(duration) && duration > 0 ? duration * 1000 : fallback;
+};
 
-    bkashIdToken = bkashRefreshTokenResult.id_token as string
+const parseTokenResponse = async (response: Response) => {
+	const payload: unknown = await response.json().catch(() => null);
+	if (!response.ok || !payload || typeof payload !== "object") {
+		throw new AppError("bKash access token request failed.", 502);
+	}
+	return payload as BkashTokenResponse;
+};
 
-    await redisClient.set(IdTokenKey,bkashIdToken,{
-        expiration :{
-            type: "EX",
-            value: 60*60
-        }
-    })
-    
-    return bkashIdToken
-    }
+const saveTokens = (result: BkashTokenResponse) => {
+	if (result.statusCode && result.statusCode !== "0000") {
+		throw new AppError(
+			result.statusMessage || "bKash access token request failed.",
+			502,
+		);
+	}
+	if (!result.id_token) {
+		throw new AppError("bKash did not return an access token.", 502);
+	}
 
-     if(bkashIdTokenTTL > 600){
-        return bkashIdToken;
-     }
+	const now = Date.now();
+	cachedTokens = {
+		idToken: result.id_token,
+		refreshToken: result.refresh_token,
+		idTokenExpiresAt: now + getExpiry(result.expires_in, 60 * 60 * 1000),
+		refreshTokenExpiresAt:
+			now + getExpiry(result.refresh_token_expires_in, 28 * 24 * 60 * 60 * 1000),
+	};
+	return result.id_token;
+};
 
-    const response = await fetch(`${config.bkash_base_url}/tokenized/checkout/token/grant`,{
-        method: "POST",
-        headers:{
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            username : config.bkash_username,
-            password : config.bkash_password
-        },
-        body : JSON.stringify({
-            app_key: config.bkash_app_key,
-            app_secret: config.bkash_app_secret
-        })
-    })
+const requestToken = async () => {
+	const {
+		bkash_base_url: baseUrl,
+		bkash_username: username,
+		bkash_password: password,
+		bkash_app_key: appKey,
+		bkash_app_secret: appSecret,
+	} = config;
 
-    if(!response.ok){
-        throw new  Error("Bkash Access Token Grant Failed")
-    }
-    const result =await response.json();
-    //bkash id token
-    await redisClient.set(IdTokenKey,result.id_token,{
-        expiration:{
-            type: "EX",
-            value: 60 * 60
-        }
-    })
+	if (!baseUrl || !username || !password || !appKey || !appSecret) {
+		throw new AppError("bKash payment is not configured.", 503);
+	}
 
-    //bkash refresh token
-    await redisClient.set(RefreshTokenKey,result.refresh_token,{
-        expiration:{
-            type: "EX",
-            value: 60 * 60 * 24 * 28
-        }
-    })
+	const request = async (url: string, body: Record<string, string>) => {
+		try {
+			return await fetch(url, {
+				method: "POST",
+				headers: authorizationHeaders,
+				body: JSON.stringify(body),
+			});
+		} catch {
+			throw new AppError("Could not connect to the bKash payment service.", 502);
+		}
+	};
+	const authorizationHeaders = {
+		"Content-Type": "application/json",
+		Accept: "application/json",
+		username,
+		password,
+	};
 
-    bkashIdToken = result.id_token
+	if (
+		cachedTokens?.refreshToken &&
+		cachedTokens.refreshTokenExpiresAt > Date.now()
+	) {
+		const refreshResponse = await request(
+			`${baseUrl}/tokenized/checkout/token/refresh`,
+			{
+				app_key: appKey,
+				app_secret: appSecret,
+				refresh_token: cachedTokens.refreshToken,
+			},
+		);
+		if (refreshResponse.ok) {
+			return saveTokens(await parseTokenResponse(refreshResponse));
+		}
+	}
 
-    return bkashIdToken
+	const grantResponse = await request(
+		`${baseUrl}/tokenized/checkout/token/grant`,
+		{ app_key: appKey, app_secret: appSecret },
+	);
+	return saveTokens(await parseTokenResponse(grantResponse));
+};
 
-   } catch (error : any) {
-     throw new Error(error.message)
-   }
-}
+export const getBkashIdToken = async () => {
+	if (
+		cachedTokens &&
+		cachedTokens.idTokenExpiresAt > Date.now() + tokenRefreshBufferMs
+	) {
+		return cachedTokens.idToken;
+	}
+
+	if (!tokenRequest) {
+		tokenRequest = requestToken();
+	}
+	try {
+		return await tokenRequest;
+	} finally {
+		tokenRequest = undefined;
+	}
+};

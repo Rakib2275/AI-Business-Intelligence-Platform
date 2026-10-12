@@ -17,12 +17,12 @@ export const PatienRegistrationZodSchema = z.object({
   				.regex( /[!@#$%^&*]/, {
     			message: "Password must contain at least one special character (!@#$%^&*)",
   				}),
-	patient : z.object({
+	user : z.object({
 		contactNumber : z.string().optional()
 	}).optional()
 })
 
-export const PatientEmailVerifyZodSchema = z.object({
+export const userEmailVerifyZodSchema = z.object({
 	email : z.email("Not email!!"),
 	otp : z.string().length(6)
 })

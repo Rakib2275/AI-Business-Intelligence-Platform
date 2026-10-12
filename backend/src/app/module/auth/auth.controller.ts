@@ -15,8 +15,8 @@ const authCookieOptions = {
 };
 
 
-const registerPatient = catchAsync(async (req: Request, res: Response) => {
-	// const payload = PatientValidation.PatientRegistrationZodSchema.safeParse(req.body);
+const registeruser = catchAsync(async (req: Request, res: Response) => {
+	// const payload = userValidation.userRegistrationZodSchema.safeParse(req.body);
 
 	// if(!payload.success){
 	// 	console.log(payload.error);
@@ -29,9 +29,9 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
 
 	const payload = req.body;
 	
-	await AuthService.registerPatient(payload);
+	await AuthService.registeruser(payload);
 
-	// const { accessToken, refreshToken, user, patient } = result;
+	// const { accessToken, refreshToken, user, user } = result;
 
 	// res.cookie("accessToken", accessToken, {
 	// 	httpOnly: true,
@@ -54,10 +54,10 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-const verifyPatientEmail = catchAsync(async (req: Request, res: Response) => {
+const verifyuserEmail = catchAsync(async (req: Request, res: Response) => {
 	
 	const payload = req.body; 
-	const result = await AuthService.verifyPatientEmail(payload, getAuditRequestContext(req));
+	const result = await AuthService.verifyuserEmail(payload, getAuditRequestContext(req));
 
 	const { accessToken, refreshToken, user } = result;
 
@@ -201,8 +201,8 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const AuthController = {
-	registerPatient,
-	verifyPatientEmail,
+	registeruser,
+	verifyuserEmail,
 	loginUser,
 	logout,
 	getMe,

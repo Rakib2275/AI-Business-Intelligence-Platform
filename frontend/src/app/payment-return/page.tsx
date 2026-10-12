@@ -11,6 +11,15 @@ type ReturnState =
 	| { status: "cancelled" }
 	| { status: "failed"; message: string };
 
+const getQueryValue = (query: URLSearchParams, ...names: string[]) => {
+	for (const [key, value] of query.entries()) {
+		if (names.some((name) => key.toLowerCase() === name.toLowerCase())) {
+			return value.trim();
+		}
+	}
+	return null;
+};
+
 export default function PaymentReturnPage() {
 	const [result, setResult] = useState<ReturnState>({ status: "loading" });
 
@@ -18,12 +27,14 @@ export default function PaymentReturnPage() {
 		let active = true;
 		const completePayment = async () => {
 			const query = new URLSearchParams(window.location.search);
-			const orderId = query.get("orderId");
-			const paymentID = query.get("paymentID");
-			const gatewayStatus = query.get("status")?.toLowerCase();
+			const orderId = getQueryValue(query, "orderId");
+			const paymentID = getQueryValue(query, "paymentID", "paymentId");
+			const gatewayStatus = getQueryValue(query, "status")?.toLowerCase();
 
-			if (gatewayStatus !== "success") {
-				if (orderId && gatewayStatus !== "cancel" && gatewayStatus !== "cancelled") {
+			if (!orderId || !paymentID) {
+				const isCancelled =
+					gatewayStatus === "cancel" || gatewayStatus === "cancelled";
+				if (orderId && isCancelled) {
 					try {
 						await apiRequest(`/payments/orders/${encodeURIComponent(orderId)}/cancel`, {
 							method: "POST",
@@ -34,16 +45,16 @@ export default function PaymentReturnPage() {
 						}
 					}
 				}
-				if (active) setResult({ status: "cancelled" });
-				return;
-			}
-
-			if (!orderId || !paymentID) {
 				if (active) {
-					setResult({
-						status: "failed",
-						message: "bKash did not return a valid payment confirmation.",
-					});
+					setResult(
+						isCancelled
+							? { status: "cancelled" }
+							: {
+									status: "failed",
+									message:
+										"bKash did not return the payment confirmation details. If money was deducted, contact support with your transaction ID.",
+								},
+					);
 				}
 				return;
 			}

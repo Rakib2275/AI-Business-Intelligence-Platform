@@ -47,10 +47,10 @@ CREATE TYPE "ReportStatus" AS ENUM ('GENERATING', 'COMPLETED', 'FAILED');
 CREATE TYPE "QueryStatus" AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'BLOCKED');
 
 -- DropForeignKey
-ALTER TABLE "patients" DROP CONSTRAINT "patients_userId_fkey";
+ALTER TABLE "users" DROP CONSTRAINT "users_userId_fkey";
 
 -- DropTable
-DROP TABLE "patients";
+DROP TABLE "users";
 
 -- DropTable
 DROP TABLE "users";

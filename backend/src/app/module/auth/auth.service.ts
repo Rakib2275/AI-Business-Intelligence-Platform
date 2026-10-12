@@ -7,7 +7,7 @@ import { jwtUtils } from "../../utils/jwt.js";
 import type {
 	IForgotPasswordPayload,
 	ILoginUserPayload,
-	IRegisterPatientPayload,
+	IRegisteruserPayload,
 	IRequestUser,
 	IResetPasswordPayload,
 	IVerifyEmailPayload,
@@ -21,7 +21,7 @@ import { AppError } from "../../utils/appError.js";
 import type { AuditRequestContext } from "../audit/audit.service.js";
 import { auditService } from "../audit/audit.service.js";
 
-const registerPatient = async (payload: IRegisterPatientPayload) => {
+const registeruser = async (payload: IRegisteruserPayload) => {
 	const { name, password } = payload;
 	
 	const email = payload.email.trim().toLowerCase();
@@ -38,7 +38,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 
 	const expirationSeconds = 5 * 60
 
-	const otpKey = `patient-registration-otp:${email}`
+	const otpKey = `user-registration-otp:${email}`
 	const otpValue = crypto.randomInt(100000, 1000000).toString();
 
 	await redisClient.set(otpKey, otpValue, {
@@ -48,7 +48,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 		}
 	})
 
-	const patientRegistrationKey = `patient-registration-data:${email}`
+	const userRegistrationKey = `user-registration-data:${email}`
 	const redisUserDataPayload = {
 		name,
 		email,
@@ -56,7 +56,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 	}
 
 	await redisClient.set(
-		patientRegistrationKey, 
+		userRegistrationKey, 
 		JSON.stringify(redisUserDataPayload), 
 		{
 			expiration: {
@@ -90,7 +90,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 	
 };
 
-const verifyPatientEmail = async (
+const verifyuserEmail = async (
 	payload: IVerifyEmailPayload,
 	context: AuditRequestContext = {},
 ) => {
@@ -114,7 +114,7 @@ const verifyPatientEmail = async (
 		throw new AppError("This email is already verified. Please log in.", 409)
 	}
 
-	const otpKey = `patient-registration-otp:${email}`
+	const otpKey = `user-registration-otp:${email}`
 
 	const redisOtp = await redisClient.get(otpKey)
 
@@ -126,21 +126,21 @@ const verifyPatientEmail = async (
 		throw new Error("OTP Does Not Match")
 	}
 
-	const patientRegistrationKey = `patient-registration-data:${email}`
+	const userRegistrationKey = `user-registration-data:${email}`
 
-	const redisPatientData = await redisClient.get(patientRegistrationKey)
+	const redisuserData = await redisClient.get(userRegistrationKey)
 
-	if(!redisPatientData){
-		throw new Error ("Patient Doesnt Exist");
+	if(!redisuserData){
+		throw new Error ("user Doesnt Exist");
 	}
 
-	const patientPayload : IRegisterPatientPayload = JSON.parse(redisPatientData)
+	const userPayload : IRegisteruserPayload = JSON.parse(redisuserData)
 
 	const createdUser = await prisma.user.create({
 		data: {
-			name : patientPayload.name,
-			email : patientPayload.email,
-            passwordHash: patientPayload.password,
+			name : userPayload.name,
+			email : userPayload.email,
+            passwordHash: userPayload.password,
 			role: Role.COUSTOMER,
 			status: UserStatus.ACTIVE,
 		},
@@ -158,7 +158,7 @@ const verifyPatientEmail = async (
 	});
 
 	await redisClient.del(otpKey)
-	await redisClient.del(patientRegistrationKey)
+	await redisClient.del(userRegistrationKey)
 
 	try {
 		const templatePath = path.join(process.cwd(), "src/app/templates/user-welcome-email.ejs")
@@ -477,8 +477,8 @@ const resetPassword =async (payload : IResetPasswordPayload) =>{
 }
 
 export const AuthService = {
-	registerPatient,
-	verifyPatientEmail,
+	registeruser,
+	verifyuserEmail,
 	loginUser,
 	getMe,
 	refreshToken,
