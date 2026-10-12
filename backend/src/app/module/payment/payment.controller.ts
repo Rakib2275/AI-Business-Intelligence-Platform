@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { AppError } from "../../utils/appError";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import { paymentService } from "./payment.service";
+import { AppError } from "../../utils/appError.js";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import { paymentService } from "./payment.service.js";
 
 const getUserId = (req: Request) => {
 	const userId = req.user?.userId;

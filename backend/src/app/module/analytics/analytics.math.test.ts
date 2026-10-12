@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateForecast, findAnomalies } from "./analytics.math";
+import { calculateForecast, findAnomalies } from "./analytics.math.js";
 
 test("forecasts later values using sorted date/value observations", () => {
 	const result = calculateForecast(

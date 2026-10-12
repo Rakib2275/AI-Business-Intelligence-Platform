@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { ZodError } from "zod";
 
-import { businessDataService } from "./businessData.service";
-import { getAuditRequestContext } from "../audit/audit.service";
+import { businessDataService } from "./businessData.service.js";
+import { getAuditRequestContext } from "../audit/audit.service.js";
 
 const getUserId = (req: Request) => {
   const userId = req.user?.userId;

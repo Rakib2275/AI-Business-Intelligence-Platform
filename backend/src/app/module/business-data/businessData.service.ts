@@ -1,13 +1,13 @@
-import type { Prisma } from "../../../generated/prisma/client";
-import { prisma } from "../../lib/prisma";
+import type { Prisma } from "../../../generated/prisma/client.js";
+import { prisma } from "../../lib/prisma.js";
 import * as XLSX from "xlsx";
 
 import {
   createBusinessDataSchema,
   updateBusinessDataSchema,
-} from "./businessData.validation";
-import type { AuditRequestContext } from "../audit/audit.service";
-import { auditService } from "../audit/audit.service";
+} from "./businessData.validation.js";
+import type { AuditRequestContext } from "../audit/audit.service.js";
+import { auditService } from "../audit/audit.service.js";
 
 
 // ======================================================

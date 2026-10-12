@@ -1,10 +1,10 @@
 
-import app from "./app";
-import config from "./app/config";
-import { transporter } from "./app/lib/nodeMailer";
-import { prisma } from "./app/lib/prisma";
-import { redisClient } from "./app/lib/redis";
-import { seedAdmin, seedSuperAdmin } from "./app/utils/seed";
+import app from "./app.js";
+import config from "./app/config/index.js";
+import { transporter } from "./app/lib/nodeMailer.js";
+import { prisma } from "./app/lib/prisma.js";
+import { redisClient } from "./app/lib/redis.js";
+import { seedAdmin, seedSuperAdmin } from "./app/utils/seed.js";
 
 const PORT = config.port;
 

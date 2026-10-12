@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { suggestChartConfiguration } from "./query.chart";
+import { suggestChartConfiguration } from "./query.chart.js";
 
 test("chart suggestions use time categories for line charts", () => {
 	assert.deepEqual(

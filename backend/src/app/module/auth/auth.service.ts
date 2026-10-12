@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import type { JwtPayload, SignOptions } from "jsonwebtoken";
-import { Role, UserStatus } from "../../../generated/prisma/enums";
-import config from "../../config";
-import { prisma } from "../../lib/prisma";
-import { jwtUtils } from "../../utils/jwt";
+import { Role, UserStatus } from "../../../generated/prisma/enums.js";
+import config from "../../config/index.js";
+import { prisma } from "../../lib/prisma.js";
+import { jwtUtils } from "../../utils/jwt.js";
 import type {
 	IForgotPasswordPayload,
 	ILoginUserPayload,
@@ -11,15 +11,15 @@ import type {
 	IRequestUser,
 	IResetPasswordPayload,
 	IVerifyEmailPayload,
-} from "./auth.interface";
+} from "./auth.interface.js";
 import crypto from "node:crypto"
-import { redisClient } from "../../lib/redis";
-import { transporter } from "../../lib/nodeMailer";
+import { redisClient } from "../../lib/redis.js";
+import { transporter } from "../../lib/nodeMailer.js";
 import ejs from "ejs"
 import path from "node:path";
-import { AppError } from "../../utils/appError";
-import type { AuditRequestContext } from "../audit/audit.service";
-import { auditService } from "../audit/audit.service";
+import { AppError } from "../../utils/appError.js";
+import type { AuditRequestContext } from "../audit/audit.service.js";
+import { auditService } from "../audit/audit.service.js";
 
 const registerPatient = async (payload: IRegisterPatientPayload) => {
 	const { name, password } = payload;

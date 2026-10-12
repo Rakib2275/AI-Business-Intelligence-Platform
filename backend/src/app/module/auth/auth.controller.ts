@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import type { IRequestUser } from "./auth.interface";
-import { AuthService } from "./auth.service";
-import { getAuditRequestContext, auditService } from "../audit/audit.service";
-import { AppError } from "../../utils/appError";
-import config from "../../config";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import type { IRequestUser } from "./auth.interface.js";
+import { AuthService } from "./auth.service.js";
+import { getAuditRequestContext, auditService } from "../audit/audit.service.js";
+import { AppError } from "../../utils/appError.js";
+import config from "../../config/index.js";
 
 const authCookieOptions = {
 	httpOnly: true,

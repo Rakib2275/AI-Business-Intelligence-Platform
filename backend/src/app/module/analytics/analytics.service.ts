@@ -1,7 +1,7 @@
-import { prisma } from "../../lib/prisma";
-import { calculateForecast, findAnomalies, type DataRow } from "./analytics.math";
-import type { AuditRequestContext } from "../audit/audit.service";
-import { auditService } from "../audit/audit.service";
+import { prisma } from "../../lib/prisma.js";
+import { calculateForecast, findAnomalies, type DataRow } from "./analytics.math.js";
+import type { AuditRequestContext } from "../audit/audit.service.js";
+import { auditService } from "../audit/audit.service.js";
 
 const getDatasetRows = async (userId: string, datasetId: string): Promise<DataRow[]> => {
 	const dataset = await prisma.businessData.findFirst({

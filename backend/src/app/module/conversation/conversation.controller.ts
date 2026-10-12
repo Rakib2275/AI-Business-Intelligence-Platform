@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { AppError } from "../../utils/appError";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import { getAuditRequestContext } from "../audit/audit.service";
-import { conversationService } from "./conversation.service";
+import { AppError } from "../../utils/appError.js";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import { getAuditRequestContext } from "../audit/audit.service.js";
+import { conversationService } from "./conversation.service.js";
 import {
 	askConversationSchema,
 	conversationIdSchema,
@@ -13,7 +13,7 @@ import {
 	messageIdSchema,
 	paginationSchema,
 	updateConversationSchema,
-} from "./conversation.validation";
+} from "./conversation.validation.js";
 
 const getUserId = (req: Request) => {
 	if (!req.user?.userId)

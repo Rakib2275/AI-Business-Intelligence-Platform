@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { auth } from "../../middleware/checkAuth";
-import { validedRequest } from "../../middleware/validedRequest";
-import { queryController } from "./query.controller";
-import { runQuerySchema } from "./query.validation";
+import { auth } from "../../middleware/checkAuth.js";
+import { validedRequest } from "../../middleware/validedRequest.js";
+import { queryController } from "./query.controller.js";
+import { runQuerySchema } from "./query.validation.js";
 
 const router = Router();
 

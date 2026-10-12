@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { auth } from "../../middleware/checkAuth";
-import { validedRequest } from "../../middleware/validedRequest";
-import { reportController } from "./report.controller";
-import { createReportSchema } from "./report.validation";
+import { auth } from "../../middleware/checkAuth.js";
+import { validedRequest } from "../../middleware/validedRequest.js";
+import { reportController } from "./report.controller.js";
+import { createReportSchema } from "./report.validation.js";
 
 const router = Router();
 

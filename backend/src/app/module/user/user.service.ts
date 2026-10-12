@@ -1,8 +1,8 @@
 import type { UploadApiResponse } from "cloudinary"
-import { cloudinary } from "../../lib/cloudinry"
-import { prisma } from "../../lib/prisma"
-import { auditService } from "../audit/audit.service"
-import type { AuditRequestContext } from "../audit/audit.service"
+import { cloudinary } from "../../lib/cloudinry.js"
+import { prisma } from "../../lib/prisma.js"
+import { auditService } from "../audit/audit.service.js"
+import type { AuditRequestContext } from "../audit/audit.service.js"
 
 const uploadProfileImage = async (
     buffer: Buffer,
