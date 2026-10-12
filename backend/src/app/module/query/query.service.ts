@@ -3,14 +3,14 @@ import {
 	MessageRole,
 	MessageType,
 	QueryStatus,
-} from "../../../generated/prisma/enums";
-import { prisma } from "../../lib/prisma";
-import { AppError } from "../../utils/appError";
-import type { AuditRequestContext } from "../audit/audit.service";
-import { auditService } from "../audit/audit.service";
-import { buildConversationContext } from "../conversation/conversation.context";
-import { suggestChartConfiguration } from "./query.chart";
-import { assertSafeSql } from "./query.sql";
+} from "../../../generated/prisma/enums.js";
+import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../utils/appError.js";
+import type { AuditRequestContext } from "../audit/audit.service.js";
+import { auditService } from "../audit/audit.service.js";
+import { buildConversationContext } from "../conversation/conversation.context.js";
+import { suggestChartConfiguration } from "./query.chart.js";
+import { assertSafeSql } from "./query.sql.js";
 
 const maxResultRows = 500;
 

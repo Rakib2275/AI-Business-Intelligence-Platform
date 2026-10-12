@@ -3,7 +3,7 @@ import test from "node:test";
 import {
 	createWidgetSchema,
 	reorderWidgetsSchema,
-} from "./dashboard.validation";
+} from "./dashboard.validation.js";
 
 test("dashboard widget configuration accepts JSON and supported widget types", () => {
 	const result = createWidgetSchema.parse({

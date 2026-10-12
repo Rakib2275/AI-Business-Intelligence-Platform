@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { PamentStatus } from "../../../generated/prisma/enums";
-import { prisma } from "../../lib/prisma";
-import { getBkashIdToken } from "../../lib/bkash";
-import config from "../../config";
-import { AppError } from "../../utils/appError";
+import { PamentStatus } from "../../../generated/prisma/enums.js";
+import { prisma } from "../../lib/prisma.js";
+import { getBkashIdToken } from "../../lib/bkash.js";
+import config from "../../config/index.js";
+import { AppError } from "../../utils/appError.js";
 
 type BkashCreateResponse = {
 	statusCode?: string;

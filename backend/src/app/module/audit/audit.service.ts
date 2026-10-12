@@ -1,10 +1,10 @@
 import type { Request } from "express";
-import type { Prisma } from "../../../generated/prisma/client";
+import type { Prisma } from "../../../generated/prisma/client.js";
 import type {
 	AuditCategory,
 	AuditStatus,
-} from "../../../generated/prisma/enums";
-import { prisma } from "../../lib/prisma";
+} from "../../../generated/prisma/enums.js";
+import { prisma } from "../../lib/prisma.js";
 
 const sensitiveKey =
 	/(password|token|secret|api.?key|authorization|cookie|otp)/i;

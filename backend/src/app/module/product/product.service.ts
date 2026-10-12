@@ -1,9 +1,9 @@
 import type { UploadApiResponse } from "cloudinary";
-import { cloudinary } from "../../lib/cloudinry";
-import { prisma } from "../../lib/prisma";
-import { AppError } from "../../utils/appError";
-import { type AuditRequestContext, auditService } from "../audit/audit.service";
-import { createProductSchema } from "./product.validation";
+import { cloudinary } from "../../lib/cloudinry.js";
+import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../utils/appError.js";
+import { type AuditRequestContext, auditService } from "../audit/audit.service.js";
+import { createProductSchema } from "./product.validation.js";
 
 const uploadProductPhoto = (buffer: Buffer) =>
 	new Promise<UploadApiResponse>((resolve, reject) => {

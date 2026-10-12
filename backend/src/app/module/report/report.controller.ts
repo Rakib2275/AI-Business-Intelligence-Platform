@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { catchAsync } from "../../utils/catchAsync";
-import { reportService } from "./report.service";
-import { getAuditRequestContext } from "../audit/audit.service";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { reportService } from "./report.service.js";
+import { getAuditRequestContext } from "../audit/audit.service.js";
 
 const fileNameFor = (title: string) =>
 	`${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "report"}.pdf`;

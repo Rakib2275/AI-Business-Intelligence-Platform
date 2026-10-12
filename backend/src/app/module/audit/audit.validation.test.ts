@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { auditQuerySchema } from "./audit.validation";
+import { auditQuerySchema } from "./audit.validation.js";
 
 test("audit filters accept bounded pagination and date filters", () => {
 	const result = auditQuerySchema.parse({

@@ -1,16 +1,16 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import type { Prisma } from "../../../generated/prisma/client";
-import { AppError } from "../../utils/appError";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import { auditService } from "./audit.service";
+import type { Prisma } from "../../../generated/prisma/client.js";
+import { AppError } from "../../utils/appError.js";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import { auditService } from "./audit.service.js";
 import {
 	auditIdSchema,
 	auditQuerySchema,
 	auditResourceSchema,
 	auditUserIdSchema,
-} from "./audit.validation";
+} from "./audit.validation.js";
 
 const getLogs = catchAsync(async (req: Request, res: Response) => {
 	const filters = auditQuerySchema.parse(req.query);

@@ -1,8 +1,8 @@
 import { Router } from "express";
 import multer from "multer";
 
-import { auth } from "../../middleware/checkAuth";
-import { businessDataController } from "./businessData.controller";
+import { auth } from "../../middleware/checkAuth.js";
+import { businessDataController } from "./businessData.controller.js";
 
 
 const router = Router();

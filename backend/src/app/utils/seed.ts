@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { Role } from "../../generated/prisma/enums";
-import { prisma } from "../lib/prisma";
-import config from "../config";
+import { Role } from "../../generated/prisma/enums.js";
+import { prisma } from "../lib/prisma.js";
+import config from "../config/index.js";
 
 const createConfiguredAdmin = async (
 	name: string | undefined,

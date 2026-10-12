@@ -1,8 +1,8 @@
 import PDFDocument from "pdfkit";
-import { QueryStatus, ReportStatus } from "../../../generated/prisma/enums";
-import { prisma } from "../../lib/prisma";
-import type { AuditRequestContext } from "../audit/audit.service";
-import { auditService } from "../audit/audit.service";
+import { QueryStatus, ReportStatus } from "../../../generated/prisma/enums.js";
+import { prisma } from "../../lib/prisma.js";
+import type { AuditRequestContext } from "../audit/audit.service.js";
+import { auditService } from "../audit/audit.service.js";
 
 const createPdf = (title: string, summary: string) =>
 	new Promise<Buffer>((resolve, reject) => {

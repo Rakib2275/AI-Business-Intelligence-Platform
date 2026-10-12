@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import { queryService } from "./query.service";
-import { getAuditRequestContext } from "../audit/audit.service";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import { queryService } from "./query.service.js";
+import { getAuditRequestContext } from "../audit/audit.service.js";
 
 const runQuery = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId;

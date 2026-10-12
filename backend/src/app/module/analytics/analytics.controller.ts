@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import { analyticsService } from "./analytics.service";
-import { getAuditRequestContext } from "../audit/audit.service";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import { analyticsService } from "./analytics.service.js";
+import { getAuditRequestContext } from "../audit/audit.service.js";
 
 const forecast = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId;

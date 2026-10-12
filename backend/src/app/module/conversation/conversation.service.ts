@@ -2,12 +2,12 @@ import {
 	ConversationStatus,
 	MessageRole,
 	MessageType,
-} from "../../../generated/prisma/enums";
-import { AppError } from "../../utils/appError";
-import type { AuditRequestContext } from "../audit/audit.service";
-import { auditService } from "../audit/audit.service";
-import { prisma } from "../../lib/prisma";
-import { queryService } from "../query/query.service";
+} from "../../../generated/prisma/enums.js";
+import { AppError } from "../../utils/appError.js";
+import type { AuditRequestContext } from "../audit/audit.service.js";
+import { auditService } from "../audit/audit.service.js";
+import { prisma } from "../../lib/prisma.js";
+import { queryService } from "../query/query.service.js";
 
 const ensureOwnedConversation = async (userId: string, id: string) => {
 	const conversation = await prisma.conversation.findFirst({

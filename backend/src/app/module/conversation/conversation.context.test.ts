@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildConversationContext } from "./conversation.context";
+import { buildConversationContext } from "./conversation.context.js";
 
 test("conversation context is chronological and bounded to recent messages", () => {
 	const messages = Array.from({ length: 14 }, (_, index) => ({

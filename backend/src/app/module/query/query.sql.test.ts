@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assertSafeSql } from "./query.sql";
+import { assertSafeSql } from "./query.sql.js";
 
 test("accepts a SELECT over the selected dataset", () => {
 	assert.doesNotThrow(() =>

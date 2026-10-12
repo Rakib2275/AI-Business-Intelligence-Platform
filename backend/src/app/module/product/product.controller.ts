@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { AppError } from "../../utils/appError";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import { getAuditRequestContext } from "../audit/audit.service";
-import { productService } from "./product.service";
+import { AppError } from "../../utils/appError.js";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import { getAuditRequestContext } from "../audit/audit.service.js";
+import { productService } from "./product.service.js";
 
 const createProduct = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId;

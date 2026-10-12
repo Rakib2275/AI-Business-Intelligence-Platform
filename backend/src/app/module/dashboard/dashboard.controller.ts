@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
-import { AppError } from "../../utils/appError";
-import { catchAsync } from "../../utils/catchAsync";
-import { sendResponse } from "../../utils/sendResponse";
-import { getAuditRequestContext } from "../audit/audit.service";
-import { dashboardService } from "./dashboard.service";
+import { AppError } from "../../utils/appError.js";
+import { catchAsync } from "../../utils/catchAsync.js";
+import { sendResponse } from "../../utils/sendResponse.js";
+import { getAuditRequestContext } from "../audit/audit.service.js";
+import { dashboardService } from "./dashboard.service.js";
 import {
 	createDashboardSchema,
 	createWidgetSchema,
@@ -14,7 +14,7 @@ import {
 	updateDashboardSchema,
 	updateWidgetSchema,
 	widgetParamsSchema,
-} from "./dashboard.validation";
+} from "./dashboard.validation.js";
 
 const getUserId = (req: Request) => {
 	if (!req.user?.userId)

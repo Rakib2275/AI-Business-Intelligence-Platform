@@ -5,7 +5,7 @@ import {
 	createMessageSchema,
 	conversationIdSchema,
 	updateConversationSchema,
-} from "./conversation.validation";
+} from "./conversation.validation.js";
 
 test("conversation request schemas validate identifiers and messages", () => {
 	const id = "79e47a38-27ac-4eb6-8cc5-7ed87c2e0041";

@@ -1,13 +1,13 @@
-import { Prisma } from "../../../generated/prisma/client";
+import { Prisma } from "../../../generated/prisma/client.js";
 import {
 	DashboardWidgetType,
 	QueryStatus,
-} from "../../../generated/prisma/enums";
-import type { AuditRequestContext } from "../audit/audit.service";
-import { auditService } from "../audit/audit.service";
-import { AppError } from "../../utils/appError";
-import { prisma } from "../../lib/prisma";
-import { queryService } from "../query/query.service";
+} from "../../../generated/prisma/enums.js";
+import type { AuditRequestContext } from "../audit/audit.service.js";
+import { auditService } from "../audit/audit.service.js";
+import { AppError } from "../../utils/appError.js";
+import { prisma } from "../../lib/prisma.js";
+import { queryService } from "../query/query.service.js";
 
 type DashboardPayload = {
 	name?: string;

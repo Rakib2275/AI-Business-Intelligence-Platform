@@ -1,8 +1,8 @@
 import { Router } from "express";
 import multer from "multer";
-import { Role } from "../../../generated/prisma/enums";
-import { auth } from "../../middleware/checkAuth";
-import { productController } from "./product.controller";
+import { Role } from "../../../generated/prisma/enums.js";
+import { auth } from "../../middleware/checkAuth.js";
+import { productController } from "./product.controller.js";
 
 const router = Router();
 const productPhotoUpload = multer({
