@@ -16,8 +16,15 @@ const main = async () => {
 		await redisClient.connect();
 		console.log("Redis Connect Successfully");
 
-		await transporter.verify();
-		console.log("NodeMailer Connect Successfully")
+		try {
+			await transporter.verify();
+			console.log("NodeMailer Connect Successfully");
+		} catch (error) {
+			console.warn(
+				"Email is unavailable because SMTP authentication failed. The server will start, but email-based features will fail until SMTP_USER and SMTP_PASSWORD are corrected.",
+			);
+			console.warn(error instanceof Error ? error.message : error);
+		}
 
 		await seedSuperAdmin();
 		await seedAdmin();
@@ -28,7 +35,7 @@ const main = async () => {
 	} catch (error) {
 		console.error("Error starting the server:", error);
 		await prisma.$disconnect();
-	  process.exit(1)
+		process.exit(1);
 	}
 };
 

@@ -2,6 +2,7 @@ export type User = {
 	id: string;
 	name: string;
 	email: string;
+	contactNumber?: string | null;
 	role: string;
 	imageUrl?: string | null;
 };

@@ -95,7 +95,35 @@ const uploadProfileImage = async (
 
 }
 
+const updateProfile = async (
+    userId: string,
+    data: { name: string; contactNumber?: string },
+    context: AuditRequestContext = {},
+) => {
+    const changedFields = ["name", ...(data.contactNumber !== undefined ? ["contactNumber"] : [])];
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+            name: data.name,
+            ...(data.contactNumber !== undefined ? { contactNumber: data.contactNumber || null } : {}),
+        },
+        omit: { passwordHash: true },
+    });
+    await auditService.log({
+        userId,
+        action: "USER_UPDATED",
+        category: "USER",
+        resourceType: "User",
+        resourceId: userId,
+        description: "User profile details updated.",
+        metadata: { changedFields },
+        ...context,
+    });
+    return updatedUser;
+};
+
 
 export const userService = {
     uploadProfileImage,
+    updateProfile,
 }

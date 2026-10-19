@@ -2,6 +2,7 @@ model User {
   id           String     @id @default(uuid())
   name         String
   email        String     @unique
+	contactNumber String?
   passwordHash String
   imageUrl     String     @default("")
   imagePublicId String    @default("")
