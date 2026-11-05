@@ -36,6 +36,13 @@ import {
 	PageHeading,
 } from "@/components/ui";
 
+const suggestedQuestions = [
+	"Which product sold the most?",
+	"Which product sold most last month?",
+	"Which area had the highest sales?",
+	"What is the total revenue?",
+];
+
 function MessageView({
 	message,
 	answer,
@@ -186,6 +193,7 @@ export default function ConversationsPage() {
 	const [creating, setCreating] = useState(false);
 	const [error, setError] = useState("");
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const questionInputRef = useRef<HTMLTextAreaElement>(null);
 
 	const loadMessages = useCallback(async (id: string) => {
 		setMessagesLoading(true);
@@ -594,6 +602,21 @@ export default function ConversationsPage() {
 										</div>
 										<h3>Every good analysis starts somewhere.</h3>
 										<p>Choose a dataset below, then ask your first question.</p>
+										<div className="suggested-question-list">
+											{suggestedQuestions.map((suggestion) => (
+												<button
+													className="button button-secondary button-small"
+													key={suggestion}
+													type="button"
+													onClick={() => {
+														setQuestion(suggestion);
+														questionInputRef.current?.focus();
+													}}
+												>
+													{suggestion}
+												</button>
+											))}
+										</div>
 									</div>
 								)}
 								{asking && (
@@ -637,6 +660,7 @@ export default function ConversationsPage() {
 											</span>
 										</div>
 										<textarea
+											ref={questionInputRef}
 											value={question}
 											onChange={(event) => setQuestion(event.target.value)}
 											placeholder="Ask a question about your business data…"

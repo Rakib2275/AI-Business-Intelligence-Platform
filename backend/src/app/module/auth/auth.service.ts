@@ -307,6 +307,7 @@ const getMe = async (user: IRequestUser) => {
 			id: true,
 			name: true,
 			email: true,
+			contactNumber: true,
 			role: true,
 			imageUrl: true,
 			status: true,

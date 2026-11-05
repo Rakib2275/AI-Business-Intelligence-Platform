@@ -22,6 +22,19 @@ const uploadProfileImage = catchAsync(async (req: Request, res: Response) => {
 	})
 })
 
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
+	const userId = req.user?.userId;
+	if (!userId) throw new Error("User information is missing from the request.");
+	const result = await userService.updateProfile(userId, req.body, getAuditRequestContext(req));
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Profile updated successfully.",
+		data: result,
+	});
+});
+
 export const UserController = {
-    uploadProfileImage
+	 uploadProfileImage,
+	 updateProfile,
 }

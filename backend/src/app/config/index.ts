@@ -9,6 +9,8 @@ export default {
 	database_url: process.env.DATABASE_URL,
 	bak_url: process.env.APP_URL,
 	frontend_url: process.env.FRONTEND_URL,
+	ai_service_url: process.env.AI_SERVICE_URL || "http://127.0.0.1:8001",
+	ai_service_api_key: process.env.AI_SERVICE_API_KEY,
 	bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
 	jwt_access_secret: process.env.JWT_ACCESS_SECRET!,
 	jwt_refresh_secret: process.env.JWT_REFRESH_SECRET!,
