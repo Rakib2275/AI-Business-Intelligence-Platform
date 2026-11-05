@@ -40,7 +40,7 @@ def database_health() -> dict[str, object]:
             "status": "connected",
             "database_test": result,
         }
-    except SQLAlchemyError as error:
+    except (SQLAlchemyError, RuntimeError) as error:
         logger.exception("AI service database health check failed")
         raise HTTPException(
             status_code=503,
@@ -52,7 +52,7 @@ def database_health() -> dict[str, object]:
 def database_schema() -> dict[str, object]:
     try:
         return {"tables": get_database_schema()}
-    except SQLAlchemyError as error:
+    except (SQLAlchemyError, RuntimeError) as error:
         logger.exception("AI service database schema inspection failed")
         raise HTTPException(
             status_code=503,

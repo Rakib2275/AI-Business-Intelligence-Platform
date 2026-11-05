@@ -2351,6 +2351,14 @@ summary:focus-visible {
 	color: #9aa1ad;
 	font-size: 9px;
 }
+.suggested-question-list {
+	display: flex;
+	max-width: 560px;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 6px;
+	margin-top: 12px;
+}
 .typing-bubble {
 	display: flex;
 	align-items: center;

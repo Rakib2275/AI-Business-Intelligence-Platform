@@ -12,6 +12,7 @@ ALLOWED_FUNCTIONS = {
     "COUNT",
     "DATE_PART",
     "DATE_TRUNC",
+    "EXTRACT",
     "LENGTH",
     "LOWER",
     "MAX",
@@ -19,6 +20,7 @@ ALLOWED_FUNCTIONS = {
     "NULLIF",
     "ROUND",
     "SUM",
+    "TIMESTAMP_TRUNC",
     "TRIM",
     "UPPER",
 }

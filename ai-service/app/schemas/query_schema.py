@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -11,7 +13,7 @@ class DatasetColumn(BaseModel):
 class ConversationTurn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    role: str = Field(pattern="^(user|assistant)$")
+    role: Literal["user", "assistant", "USER", "ASSISTANT"]
     content: str = Field(max_length=4000)
 
 

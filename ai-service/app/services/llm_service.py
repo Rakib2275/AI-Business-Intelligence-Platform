@@ -61,7 +61,10 @@ async def generate_sql(request: TextToSqlRequest) -> str:
         "table": request.table_name,
         "description": request.description,
         "columns": [column.model_dump() for column in request.columns],
-        "recent_conversation": [turn.model_dump() for turn in request.conversation],
+        "recent_conversation": [
+            {"role": turn.role.lower(), "content": turn.content}
+            for turn in request.conversation
+        ],
         "question": request.question,
     }
     content = await _complete(

@@ -43,44 +43,6 @@ const callAiService = async <T>(
 	return (await response.json()) as T;
 };
 
-const getModelResponse = async (system: string, prompt: string) => {
-	const apiKey = process.env.OPENAI_API_KEY;
-	if (!apiKey) {
-		throw new Error("AI queries are not configured. Set OPENAI_API_KEY.");
-	}
-
-	const response = await fetch("https://api.openai.com/v1/chat/completions", {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${apiKey}`,
-			"Content-Type": "application/json",
-		},
-		signal: AbortSignal.timeout(30_000),
-		body: JSON.stringify({
-			model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-			temperature: 0,
-			messages: [
-				{ role: "system", content: system },
-				{ role: "user", content: prompt },
-			],
-		}),
-	});
-
-	if (!response.ok) {
-		throw new Error(`AI provider returned status ${response.status}.`);
-	}
-
-	const result = (await response.json()) as {
-		choices?: Array<{ message?: { content?: string | null } }>;
-	};
-	const content = result.choices?.[0]?.message?.content?.trim();
-	if (!content) {
-		throw new Error("AI provider returned an empty response.");
-	}
-
-	return content;
-};
-
 const getColumnSqlType = (type: string) => {
 	switch (type.toUpperCase()) {
 		case "NUMBER":

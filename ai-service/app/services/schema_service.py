@@ -4,6 +4,8 @@ from app.config import engine
 
 
 def get_database_schema() -> list[dict[str, object]]:
+    if engine is None:
+        raise RuntimeError("DATABASE_URL is not configured.")
     inspector = inspect(engine)
     tables: list[dict[str, object]] = []
 
