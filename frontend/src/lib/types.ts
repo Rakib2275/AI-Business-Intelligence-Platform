@@ -46,7 +46,7 @@ export type ConversationMessage = {
 		columns?: string[];
 		resultCount?: number;
 		chartConfiguration?: {
-			type: string;
+			type: ChartConfiguration["type"];
 			xAxis?: string;
 			series?: string[];
 		};
@@ -77,7 +77,7 @@ export type QueryRecord = {
 };
 
 export type ChartConfiguration = {
-	type: "TABLE" | "BAR_CHART" | "LINE_CHART";
+	type: "TABLE" | "BAR_CHART" | "LINE_CHART" | "PIE_CHART" | "KPI_CARDS";
 	xAxis?: string;
 	series: string[];
 };

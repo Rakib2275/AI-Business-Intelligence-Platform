@@ -2,6 +2,8 @@
 
 import type { ChartConfiguration } from "@/lib/types";
 
+const chartColors = ["#58a77d", "#6d8fe8", "#e7a548", "#c66ea8", "#50a9b5"];
+
 const numberValue = (value: unknown) => {
 	if (typeof value === "number") return Number.isFinite(value) ? value : null;
 	if (typeof value !== "string" || !value.trim()) return null;
@@ -73,56 +75,146 @@ export function ResultChart({
 	rows: Array<Record<string, unknown>>;
 	configuration: ChartConfiguration;
 }) {
-	const xAxis = configuration.xAxis;
-	const series = configuration.series[0];
-	if (!xAxis || !series || rows.length < 2) {
+	const columns = Object.keys(rows[0] ?? {});
+	if (configuration.type === "KPI_CARDS") {
+		const metrics = configuration.series.flatMap((column) => {
+			const value = numberValue(rows[0]?.[column]);
+			return value === null ? [] : [{ column, value }];
+		});
+		if (!metrics.length) {
+			return <ResultTable rows={rows} columns={columns} compact />;
+		}
 		return (
-			<ResultTable rows={rows} columns={Object.keys(rows[0] ?? {})} compact />
+			<div className="kpi-card-grid">
+				{metrics.map(({ column, value }) => (
+					<div className="kpi-card" key={column}>
+						<span>{column}</span>
+						<strong>{formatValue(value)}</strong>
+					</div>
+				))}
+			</div>
 		);
 	}
-	const pointOccurrences = new Map<string, number>();
-	const points = rows
-		.flatMap((row, index) => {
-			const value = numberValue(row[series]);
-			if (value === null) return [];
-			const label = String(row[xAxis] ?? "");
-			const signature = JSON.stringify([label, value]) ?? "";
-			const occurrence = pointOccurrences.get(signature) ?? 0;
-			pointOccurrences.set(signature, occurrence + 1);
-			return [
-				{
-					index,
-					value,
-					label,
-					key: `${signature}:${occurrence}`,
-				},
-			];
-		})
-		.slice(0, 20);
-	if (points.length < 2)
-		return (
-			<ResultTable rows={rows} columns={Object.keys(rows[0] ?? {})} compact />
-		);
 
-	const values = points.map(({ value }) => value);
+	const xAxis = configuration.xAxis;
+	if (!xAxis || !configuration.series.length || rows.length < 2) {
+		return <ResultTable rows={rows} columns={columns} compact />;
+	}
+
+	const chartSeries = configuration.series
+		.map((name, seriesIndex) => ({
+			name,
+			color: chartColors[seriesIndex % chartColors.length],
+			points: rows
+				.map((row, index) => {
+					const value = numberValue(row[name]);
+					if (value === null) return null;
+					return {
+						index,
+						value,
+						label: String(row[xAxis] ?? ""),
+						key: `${name}:${index}`,
+					};
+				})
+				.filter((point) => point !== null)
+				.slice(0, 20),
+		}))
+		.filter((series) => series.points.length > 0);
+
+	if (!chartSeries.length) {
+		return <ResultTable rows={rows} columns={columns} compact />;
+	}
+
+	if (configuration.type === "PIE_CHART") {
+		const points = chartSeries[0].points.filter(({ value }) => value > 0);
+		const total = points.reduce((sum, point) => sum + point.value, 0);
+		if (!total) return <ResultTable rows={rows} columns={columns} compact />;
+
+		let angle = -Math.PI / 2;
+		const slices = points.map((point, index) => {
+			const portion = point.value / total;
+			const endAngle = angle + portion * Math.PI * 2;
+			const start = {
+				x: 150 + 58 * Math.cos(angle),
+				y: 70 + 58 * Math.sin(angle),
+			};
+			const end = {
+				x: 150 + 58 * Math.cos(endAngle),
+				y: 70 + 58 * Math.sin(endAngle),
+			};
+			const path =
+				portion >= 1
+					? ""
+					: `M 150 70 L ${start.x} ${start.y} A 58 58 0 ${portion > 0.5 ? 1 : 0} 1 ${end.x} ${end.y} Z`;
+			const slice = {
+				...point,
+				path,
+				color: chartColors[index % chartColors.length],
+				percentage: portion * 100,
+			};
+			angle = endAngle;
+			return slice;
+		});
+
+		return (
+			<div className="chart-preview chart-preview-pie">
+				<svg
+					viewBox="0 0 300 140"
+					role="img"
+					aria-label={`${chartSeries[0].name} share by ${xAxis}`}
+				>
+					{points.length === 1 ? (
+						<circle cx="150" cy="70" r="58" fill={chartColors[0]} />
+					) : (
+						slices.map((slice) => (
+							<path
+								key={slice.key}
+								d={slice.path}
+								fill={slice.color}
+								stroke="white"
+								strokeWidth="1.5"
+							/>
+						))
+					)}
+				</svg>
+				<ul className="chart-pie-legend">
+					{slices.map((slice) => (
+						<li key={slice.key}>
+							<span style={{ backgroundColor: slice.color }} />
+							<strong>{slice.label}</strong>
+							<small>
+								{new Intl.NumberFormat(undefined, {
+									maximumFractionDigits: 1,
+								}).format(slice.percentage)}
+								%
+							</small>
+						</li>
+					))}
+				</ul>
+			</div>
+		);
+	}
+
+	const visiblePoints = chartSeries.flatMap((series) => series.points);
+	const values = visiblePoints.map(({ value }) => value);
 	const min = Math.min(0, ...values);
-	const max = Math.max(...values);
+	const max = Math.max(0, ...values);
 	const range = max - min || 1;
-	const xAt = (index: number) =>
-		12 + (index / Math.max(points.length - 1, 1)) * 276;
 	const yAt = (value: number) => 94 - ((value - min) / range) * 76;
-	const line = points
-		.map(
-			(point, index) =>
-				`${index ? "L" : "M"} ${xAt(index)} ${yAt(point.value)}`,
-		)
-		.join(" ");
+	const zeroY = yAt(0);
+	const visibleRowCount = Math.min(rows.length, 20);
+	const xAt = (index: number) =>
+		24 + ((index + 0.5) / visibleRowCount) * 252;
 
 	return (
 		<div className="chart-preview">
 			<div className="chart-legend">
-				<span />
-				<strong>{series}</strong>
+				{chartSeries.map((series) => (
+					<span className="chart-legend-item" key={series.name}>
+						<i style={{ backgroundColor: series.color }} />
+						<strong>{series.name}</strong>
+					</span>
+				))}
 				<small>
 					{configuration.type === "LINE_CHART" ? "Trend" : "By category"}
 				</small>
@@ -130,49 +222,72 @@ export function ResultChart({
 			<svg
 				viewBox="0 0 300 120"
 				role="img"
-				aria-label={`${series} by ${xAxis} chart`}
+				aria-label={`${chartSeries.map((series) => series.name).join(", ")} by ${xAxis} chart`}
 			>
 				<path
 					d="M 10 95 H 290 M 10 56 H 290 M 10 18 H 290"
 					className="chart-gridline"
 				/>
 				{configuration.type === "BAR_CHART" ? (
-					points.map((point, index) => {
-						const width = Math.min(15, 180 / points.length);
-						return (
-							<rect
-								key={point.key}
-								x={xAt(index) - width / 2}
-								y={yAt(point.value)}
-								width={width}
-								height={Math.max(95 - yAt(point.value), 2)}
-								rx="3"
-								className="chart-bar"
-							/>
+					chartSeries.flatMap((series, seriesIndex) => {
+						const groupWidth = 252 / visibleRowCount;
+						const barWidth = Math.min(
+							16,
+							(groupWidth * 0.8) / chartSeries.length,
 						);
+						return series.points.map((point) => {
+							const center = xAt(point.index);
+							const y = yAt(point.value);
+							return (
+								<rect
+									key={point.key}
+									x={
+										center -
+										(chartSeries.length * barWidth) / 2 +
+										seriesIndex * barWidth
+									}
+									y={Math.min(y, zeroY)}
+									width={barWidth}
+									height={Math.max(Math.abs(zeroY - y), 2)}
+									rx="2"
+									fill={series.color}
+								/>
+							);
+						});
 					})
 				) : (
-					<>
-						<path d={line} className="chart-line" />
-						<path
-							d={`${line} L ${xAt(points.length - 1)} 95 L ${xAt(0)} 95 Z`}
-							className="chart-area"
-						/>
-						{points.map((point, index) => (
-							<circle
-								key={point.key}
-								cx={xAt(index)}
-								cy={yAt(point.value)}
-								r="3.5"
-								className="chart-point"
-							/>
-						))}
-					</>
+					chartSeries.map((series) => {
+						const line = series.points
+							.map((point, index) => {
+								const command = index ? "L" : "M";
+								return `${command} ${xAt(point.index)} ${yAt(point.value)}`;
+							})
+							.join(" ");
+						return (
+							<g key={series.name}>
+								<path
+									d={line}
+									className="chart-line"
+									stroke={series.color}
+								/>
+								{series.points.map((point) => (
+									<circle
+										key={point.key}
+										cx={xAt(point.index)}
+										cy={yAt(point.value)}
+										r="3.5"
+										className="chart-point"
+										stroke={series.color}
+									/>
+								))}
+							</g>
+						);
+					})
 				)}
 			</svg>
 			<div className="chart-labels">
-				<span>{points[0]?.label}</span>
-				<span>{points.at(-1)?.label}</span>
+				<span>{chartSeries[0].points[0]?.label}</span>
+				<span>{chartSeries[0].points.at(-1)?.label}</span>
 			</div>
 		</div>
 	);

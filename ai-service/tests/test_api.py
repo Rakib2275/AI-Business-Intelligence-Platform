@@ -110,8 +110,98 @@ def test_business_insights_returns_findings_and_recommendations(monkeypatch) -> 
         "summary": "Product A led revenue.",
         "findings": ["Product A: 1200 revenue."],
         "recommendations": ["Review Product A stock levels."],
+        "chartConfiguration": {
+            "type": "KPI_CARDS",
+            "xAxis": None,
+            "series": ["revenue"],
+        },
     }
     assert '"result_truncated": true' in captured_prompt[0]
+
+
+def test_business_insights_recommends_line_chart_for_monthly_results(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+
+    async def fake_complete(system_prompt: str, user_prompt: str) -> str:
+        return '{"summary":"Sales increased.","findings":[],"recommendations":[]}'
+
+    monkeypatch.setattr(llm_service, "_complete", fake_complete)
+    response = TestClient(app).post(
+        "/api/v1/text-to-sql/insights",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "question": "Compare monthly revenue.",
+            "rows": [
+                {"month": "2026-01", "revenue": 100},
+                {"month": "2026-02", "revenue": 120},
+            ],
+            "result_count": 2,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["chartConfiguration"] == {
+        "type": "LINE_CHART",
+        "xAxis": "month",
+        "series": ["revenue"],
+    }
+
+
+def test_business_insights_recommends_bar_chart_for_category_comparison(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+
+    async def fake_complete(system_prompt: str, user_prompt: str) -> str:
+        return '{"summary":"North has the highest sales.","findings":[],"recommendations":[]}'
+
+    monkeypatch.setattr(llm_service, "_complete", fake_complete)
+    response = TestClient(app).post(
+        "/api/v1/text-to-sql/insights",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "question": "Which area has the highest sales?",
+            "rows": [
+                {"area": "North", "sales": 100},
+                {"area": "South", "sales": 80},
+            ],
+            "result_count": 2,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["chartConfiguration"] == {
+        "type": "BAR_CHART",
+        "xAxis": "area",
+        "series": ["sales"],
+    }
+
+
+def test_business_insights_recommends_pie_chart_for_category_share(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+
+    async def fake_complete(system_prompt: str, user_prompt: str) -> str:
+        return '{"summary":"Area sales share.","findings":[],"recommendations":[]}'
+
+    monkeypatch.setattr(llm_service, "_complete", fake_complete)
+    response = TestClient(app).post(
+        "/api/v1/text-to-sql/insights",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "question": "Show sales share by area.",
+            "rows": [
+                {"area": "North", "sales": 100},
+                {"area": "South", "sales": 80},
+                {"area": "West", "sales": 50},
+            ],
+            "result_count": 3,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["chartConfiguration"] == {
+        "type": "PIE_CHART",
+        "xAxis": "area",
+        "series": ["sales"],
+    }
 
 
 def test_business_insights_handles_empty_results_without_llm(monkeypatch) -> None:
@@ -135,6 +225,7 @@ def test_business_insights_handles_empty_results_without_llm(monkeypatch) -> Non
         "summary": "The query returned no matching rows.",
         "findings": [],
         "recommendations": [],
+        "chartConfiguration": {"type": "TABLE", "xAxis": None, "series": []},
     }
 
 

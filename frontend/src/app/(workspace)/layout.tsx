@@ -1,6 +1,7 @@
 "use client";
 
 import { SessionProvider, useSession } from "@/lib/session";
+import { WorkspaceQueryProvider } from "@/lib/query-provider";
 import { AppShell } from "@/components/app-shell";
 
 function WorkspaceContent({ children }: { children: React.ReactNode }) {
@@ -25,8 +26,10 @@ export default function WorkspaceLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<SessionProvider>
-			<WorkspaceContent>{children}</WorkspaceContent>
-		</SessionProvider>
+		<WorkspaceQueryProvider>
+			<SessionProvider>
+				<WorkspaceContent>{children}</WorkspaceContent>
+			</SessionProvider>
+		</WorkspaceQueryProvider>
 	);
 }

@@ -40,9 +40,21 @@ class SummarizeRequest(BaseModel):
     result_truncated: bool = False
 
 
-class BusinessInsights(BaseModel):
+class ChartConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+    type: Literal["TABLE", "BAR_CHART", "LINE_CHART", "PIE_CHART", "KPI_CARDS"]
+    xAxis: str | None = None
+    series: list[str]
+
+
+class BusinessInsights(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     summary: str
     findings: list[str] = Field(max_length=5)
     recommendations: list[str] = Field(max_length=3)
+    chart_configuration: ChartConfiguration = Field(
+        default_factory=lambda: ChartConfiguration(type="TABLE", series=[]),
+        alias="chartConfiguration",
+    )

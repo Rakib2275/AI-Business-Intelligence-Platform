@@ -46,6 +46,11 @@ a statement timeout, and a 500-row cap.
   findings and suggested next steps (requires `x-api-key`). Send the question,
   at most 50 result rows, the query result count, and whether the 500-row cap
   was reached. The response includes a plain-language `summary`, up to five
-  `findings`, and up to three data-grounded `recommendations`.
+  `findings`, up to three data-grounded `recommendations`, and a
+  `chartConfiguration` selected from the result shape. It can recommend
+  `TABLE`, `KPI_CARDS` for a single-row result, `LINE_CHART` for time-based
+  results, `PIE_CHART` for small category-share results, or `BAR_CHART` for
+  other category comparisons. The configuration names the result columns used
+  for the x-axis and series; it does not execute or transform the query.
 
 Run the focused tests with `python -m pytest`.

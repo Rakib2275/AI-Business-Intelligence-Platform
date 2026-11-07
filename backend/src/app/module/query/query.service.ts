@@ -10,7 +10,10 @@ import { AppError } from "../../utils/appError.js";
 import type { AuditRequestContext } from "../audit/audit.service.js";
 import { auditService } from "../audit/audit.service.js";
 import { buildConversationContext } from "../conversation/conversation.context.js";
-import { suggestChartConfiguration } from "./query.chart.js";
+import {
+	parseChartConfiguration,
+	suggestChartConfiguration,
+} from "./query.chart.js";
 import { assertSafeSql } from "./query.sql.js";
 
 const maxResultRows = 500;
@@ -107,6 +110,7 @@ const summarizeResults = async (question: string, rows: Record<string, unknown>[
 			summary: "The query returned no matching rows.",
 			findings: [],
 			recommendations: [],
+			chartConfiguration: suggestChartConfiguration(rows),
 			analysisWarning: undefined,
 		};
 	}
@@ -115,6 +119,7 @@ const summarizeResults = async (question: string, rows: Record<string, unknown>[
 			summary?: unknown;
 			findings?: unknown;
 			recommendations?: unknown;
+			chartConfiguration?: unknown;
 		}>(
 			"text-to-sql/insights",
 			{
@@ -138,6 +143,9 @@ const summarizeResults = async (question: string, rows: Record<string, unknown>[
 			summary: result.summary.trim(),
 			findings: result.findings,
 			recommendations: result.recommendations,
+			chartConfiguration:
+				parseChartConfiguration(result.chartConfiguration, rows) ??
+				suggestChartConfiguration(rows),
 			analysisWarning: undefined,
 		};
 	} catch {
@@ -145,6 +153,7 @@ const summarizeResults = async (question: string, rows: Record<string, unknown>[
 			summary: "The query completed, but its AI-generated analysis is unavailable.",
 			findings: [],
 			recommendations: [],
+			chartConfiguration: suggestChartConfiguration(rows),
 			analysisWarning: "AI analysis could not be generated. Query results are available.",
 		};
 	}
@@ -207,6 +216,7 @@ const runQuery = async (
 	let summary: string;
 	let findings: string[];
 	let recommendations: string[];
+	let analysisChartConfiguration: ReturnType<typeof suggestChartConfiguration>;
 	let analysisWarning: string | undefined;
 	try {
 		const tableName = dataset.tableName.toLowerCase();
@@ -242,6 +252,7 @@ const runQuery = async (
 		summary = analysis.summary;
 		findings = analysis.findings;
 		recommendations = analysis.recommendations;
+		analysisChartConfiguration = analysis.chartConfiguration;
 		analysisWarning = analysis.analysisWarning;
 	} catch {
 		const validationRejected = stage === "VALIDATION";
@@ -307,7 +318,7 @@ const runQuery = async (
 
 	const executionTime = Date.now() - startedAt;
 	const columns = rows.length ? Object.keys(rows[0]) : [];
-	const chartConfiguration = suggestChartConfiguration(rows);
+	const chartConfiguration = analysisChartConfiguration;
 	const updatedHistory = await prisma.$transaction(async (transaction) => {
 		const updated = await transaction.queryHistory.update({
 			where: { id: history.id },

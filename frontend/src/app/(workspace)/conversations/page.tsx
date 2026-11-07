@@ -8,6 +8,7 @@ import {
 	useState,
 	type FormEvent,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowUp,
 	Check,
@@ -28,6 +29,10 @@ import type {
 	Dataset,
 	QueryAnswer,
 } from "@/lib/types";
+import {
+	workspaceQueries,
+	workspaceQueryKeys,
+} from "@/lib/workspace-queries";
 import { ResultChart, ResultTable } from "@/components/result-visual";
 import {
 	EmptyState,
@@ -204,6 +209,7 @@ function MessageView({
 }
 
 export default function ConversationsPage() {
+	const queryClient = useQueryClient();
 	const [conversations, setConversations] = useState<Conversation[]>([]);
 	const [datasets, setDatasets] = useState<Dataset[]>([]);
 	const [selectedId, setSelectedId] = useState("");
@@ -224,8 +230,10 @@ export default function ConversationsPage() {
 		setMessagesLoading(true);
 		setError("");
 		try {
-			const response = await apiRequest<Conversation>(`/conversations/${id}`);
-			setMessages(response.data.messages ?? []);
+			const conversation = await queryClient.fetchQuery(
+				workspaceQueries.conversation(id),
+			);
+			setMessages(conversation.messages ?? []);
 		} catch (caught) {
 			setError(
 				caught instanceof ApiError
@@ -235,31 +243,31 @@ export default function ConversationsPage() {
 		} finally {
 			setMessagesLoading(false);
 		}
-	}, []);
+	}, [queryClient]);
 
 	const loadInitial = useCallback(async () => {
 		setLoading(true);
 		setError("");
 		try {
-			const [conversationResponse, datasetResponse] = await Promise.all([
-				apiRequest<Conversation[]>("/conversations?page=1&limit=100"),
-				apiRequest<Dataset[]>("/business-data"),
+			const [conversationData, datasetData] = await Promise.all([
+				queryClient.fetchQuery(workspaceQueries.conversations(1, 100)),
+				queryClient.fetchQuery(workspaceQueries.datasets()),
 			]);
-			setConversations(conversationResponse.data);
-			setDatasets(datasetResponse.data);
+			setConversations(conversationData);
+			setDatasets(datasetData);
 			const params = new URLSearchParams(window.location.search);
 			const requestedConversation = params.get("id");
 			const requestedDataset = params.get("dataset");
 			if (
 				requestedDataset &&
-				datasetResponse.data.some((dataset) => dataset.id === requestedDataset)
+				datasetData.some((dataset) => dataset.id === requestedDataset)
 			) {
 				setDatasetId(requestedDataset);
 			}
 			const firstConversation =
-				conversationResponse.data.find(
+				conversationData.find(
 					(item) => item.id === requestedConversation,
-				) ?? conversationResponse.data[0];
+				) ?? conversationData[0];
 			if (firstConversation) setSelectedId(firstConversation.id);
 		} catch (caught) {
 			setError(
@@ -270,7 +278,7 @@ export default function ConversationsPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [queryClient]);
 
 	useEffect(() => {
 		void loadInitial();
@@ -308,6 +316,9 @@ export default function ConversationsPage() {
 				"POST",
 				{ title: "New conversation" },
 			);
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.conversations,
+			});
 			setConversations((current) => [response.data, ...current]);
 			setMessages([]);
 			setSelectedId(response.data.id);
@@ -328,6 +339,12 @@ export default function ConversationsPage() {
 		setError("");
 		try {
 			await apiRequest<null>(`/conversations/${id}`, { method: "DELETE" });
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.conversations,
+			});
+			await queryClient.removeQueries({
+				queryKey: workspaceQueryKeys.conversation(id),
+			});
 			const remaining = conversations.filter(
 				(conversation) => conversation.id !== id,
 			);
@@ -359,6 +376,12 @@ export default function ConversationsPage() {
 				"PATCH",
 				{ title: title.trim() },
 			);
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.conversations,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.conversation(conversation.id),
+			});
 			setConversations((current) =>
 				current.map((item) =>
 					item.id === conversation.id ? { ...item, ...response.data } : item,
@@ -393,6 +416,15 @@ export default function ConversationsPage() {
 				...current,
 				[response.data.queryId]: response.data,
 			}));
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.conversation(selectedId),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.conversations,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.queryHistory,
+			});
 			await loadMessages(selectedId);
 			setConversations((current) =>
 				current
@@ -429,6 +461,9 @@ export default function ConversationsPage() {
 				`/conversations/${selectedId}/messages/${message.id}`,
 				{ method: "DELETE" },
 			);
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.conversation(selectedId),
+			});
 			setMessages((current) =>
 				current.filter((item) => item.id !== message.id),
 			);
