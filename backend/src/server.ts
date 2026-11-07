@@ -8,13 +8,32 @@ import { seedAdmin, seedSuperAdmin } from "./app/utils/seed.js";
 
 const PORT = config.port;
 
+const connectRedis = async () => {
+	try {
+		await redisClient.connect();
+		console.log("Redis Connect Successfully");
+	} catch (error) {
+		console.warn(
+			"Redis is unavailable. The server will start, but Redis-backed authentication features will fail until Redis is reachable.",
+		);
+		console.warn(error instanceof Error ? error.message : error);
+
+		if (config.node_env === "production") {
+			throw error;
+		}
+	}
+};
+
 const main = async () => {
 	try {
 		await prisma.$connect();
 		console.log("Connected to the database successfully.");
 
-		await redisClient.connect();
-		console.log("Redis Connect Successfully");
+		if (config.node_env === "production") {
+			await connectRedis();
+		} else {
+			void connectRedis();
+		}
 
 		try {
 			await transporter.verify();

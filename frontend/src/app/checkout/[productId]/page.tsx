@@ -15,6 +15,7 @@ type CheckoutResult = {
 
 export default function CheckoutPage() {
 	const params = useParams<{ productId: string }>();
+	const productId = params?.productId ?? "";
 	const [product, setProduct] = useState<Product | null>(null);
 	const [signedIn, setSignedIn] = useState(false);
 	const [loading, setLoading] = useState(true);
@@ -24,6 +25,12 @@ export default function CheckoutPage() {
 	useEffect(() => {
 		let active = true;
 		const loadCheckout = async () => {
+			if (!productId) {
+				setError("This product could not be found.");
+				setLoading(false);
+				return;
+			}
+
 			const [sessionResult, productResult] = await Promise.allSettled([
 				apiRequest<User>("/auth/me"),
 				apiRequest<Product[]>("/products"),
@@ -41,14 +48,14 @@ export default function CheckoutPage() {
 			}
 
 			const demoProduct = demoProducts.find(
-				(item) => item.id === params.productId,
+				(item) => item.id === productId,
 			);
 			if (demoProduct) {
 				setProduct(demoProduct);
 			} else if (productResult.status === "fulfilled") {
 				setProduct(
 					productResult.value.data.find(
-						(item) => item.id === params.productId,
+						(item) => item.id === productId,
 					) ?? null,
 				);
 			} else {
@@ -63,7 +70,7 @@ export default function CheckoutPage() {
 		return () => {
 			active = false;
 		};
-	}, [params.productId]);
+	}, [productId]);
 
 	const startPayment = async () => {
 		if (!product || product.id.startsWith("demo-")) return;
@@ -86,7 +93,7 @@ export default function CheckoutPage() {
 		}
 	};
 
-	const loginHref = `/login?next=${encodeURIComponent(`/checkout/${params.productId}`)}`;
+	const loginHref = `/login?next=${encodeURIComponent(`/checkout/${productId}`)}`;
 	const isSample = product?.id.startsWith("demo-") ?? false;
 
 	return (

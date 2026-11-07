@@ -50,6 +50,9 @@ function MessageView({
 	message: ConversationMessage;
 	answer?: QueryAnswer;
 }) {
+	const findings = message.metadata?.findings ?? [];
+	const recommendations = message.metadata?.recommendations ?? [];
+
 	if (message.role === "USER") {
 		return (
 			<div className="chat-message chat-user">
@@ -111,6 +114,28 @@ function MessageView({
 					</span>
 					<div className="assistant-bubble">
 						<p>{message.content}</p>
+						{findings.length > 0 && (
+							<div className="business-insight-section">
+								<strong>Key findings</strong>
+								<ul>
+									{findings.map((finding, index) => (
+										<li key={`${index}-${finding}`}>{finding}</li>
+									))}
+								</ul>
+							</div>
+						)}
+						{recommendations.length > 0 && (
+							<div className="business-insight-section">
+								<strong>Suggested next steps</strong>
+								<ul>
+									{recommendations.map((recommendation, index) => (
+										<li key={`${index}-${recommendation}`}>
+											{recommendation}
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
 						{message.metadata?.analysisAvailable === false && (
 							<div className="inline-warning">
 								AI analysis wasn’t available. The validated query result is

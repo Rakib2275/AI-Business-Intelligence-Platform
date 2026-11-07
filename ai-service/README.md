@@ -42,7 +42,10 @@ a statement timeout, and a 500-row cap.
   `x-api-key`).
 - `POST /api/v1/text-to-sql/generate` — generate and validate a SELECT statement
   (requires `x-api-key`).
-- `POST /api/v1/text-to-sql/summarize` — summarize at most 50 result rows
-  (requires `x-api-key`).
+- `POST /api/v1/text-to-sql/insights` — summarize SQL results with evidence-based
+  findings and suggested next steps (requires `x-api-key`). Send the question,
+  at most 50 result rows, the query result count, and whether the 500-row cap
+  was reached. The response includes a plain-language `summary`, up to five
+  `findings`, and up to three data-grounded `recommendations`.
 
 Run the focused tests with `python -m pytest`.

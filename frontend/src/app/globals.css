@@ -2283,6 +2283,24 @@ summary:focus-visible {
 	margin: 0;
 	white-space: pre-wrap;
 }
+.business-insight-section {
+	margin-top: 9px;
+	padding-top: 8px;
+	border-top: 1px solid #e8ecea;
+}
+.business-insight-section > strong {
+	color: #4d6758;
+	font-size: 9px;
+}
+.business-insight-section ul {
+	display: grid;
+	gap: 5px;
+	margin: 5px 0 0;
+	padding-left: 16px;
+}
+.business-insight-section li {
+	padding-left: 2px;
+}
 .assistant-error {
 	border: 1px solid #f0d9d4;
 	color: #a75d51;

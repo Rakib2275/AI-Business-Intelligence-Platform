@@ -80,3 +80,78 @@ def test_database_schema_endpoint_requires_key_and_returns_columns(monkeypatch) 
     )
     assert response.status_code == 200
     assert response.json()["tables"][0]["columns"][0]["name"] == "revenue"
+
+
+def test_business_insights_returns_findings_and_recommendations(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+    captured_prompt: list[str] = []
+
+    async def fake_complete(system_prompt: str, user_prompt: str) -> str:
+        captured_prompt.append(user_prompt)
+        return (
+            '{"summary":"Product A led revenue.",'
+            '"findings":["Product A: 1200 revenue."],'
+            '"recommendations":["Review Product A stock levels."]}'
+        )
+
+    monkeypatch.setattr(llm_service, "_complete", fake_complete)
+    response = TestClient(app).post(
+        "/api/v1/text-to-sql/insights",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "question": "Which product earned most?",
+            "rows": [{"product": "A", "revenue": 1200}],
+            "result_count": 500,
+            "result_truncated": True,
+        },
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "summary": "Product A led revenue.",
+        "findings": ["Product A: 1200 revenue."],
+        "recommendations": ["Review Product A stock levels."],
+    }
+    assert '"result_truncated": true' in captured_prompt[0]
+
+
+def test_business_insights_handles_empty_results_without_llm(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+
+    async def unexpected_llm_call(system_prompt: str, user_prompt: str) -> str:
+        raise AssertionError("LLM should not be called for an empty result.")
+
+    monkeypatch.setattr(llm_service, "_complete", unexpected_llm_call)
+    result = TestClient(app).post(
+        "/api/v1/text-to-sql/insights",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "question": "Which product earned most?",
+            "rows": [],
+            "result_count": 0,
+        },
+    )
+    assert result.status_code == 200
+    assert result.json() == {
+        "summary": "The query returned no matching rows.",
+        "findings": [],
+        "recommendations": [],
+    }
+
+
+def test_business_insights_rejects_malformed_llm_output(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+
+    async def fake_complete(system_prompt: str, user_prompt: str) -> str:
+        return "Here is an unsupported plain-text answer."
+
+    monkeypatch.setattr(llm_service, "_complete", fake_complete)
+    response = TestClient(app).post(
+        "/api/v1/text-to-sql/insights",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "question": "Which product earned most?",
+            "rows": [{"product": "A", "revenue": 1200}],
+            "result_count": 1,
+        },
+    )
+    assert response.status_code == 502

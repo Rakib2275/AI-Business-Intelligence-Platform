@@ -33,7 +33,7 @@ const navItems = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-	const pathname = usePathname();
+	const pathname = usePathname() ?? "";
 	const router = useRouter();
 	const { user, logout } = useSession();
 	const [logoutError, setLogoutError] = useState("");
