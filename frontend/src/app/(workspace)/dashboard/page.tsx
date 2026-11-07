@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowRight,
 	ArrowUpRight,
@@ -12,13 +13,14 @@ import {
 	Plus,
 	Sparkles,
 } from "lucide-react";
-import { ApiError, apiRequest } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import type {
 	Conversation,
 	Dashboard,
 	Dataset,
 	QueryRecord,
 } from "@/lib/types";
+import { workspaceQueries } from "@/lib/workspace-queries";
 import {
 	EmptyState,
 	ErrorNotice,
@@ -42,6 +44,7 @@ const emptyOverview: OverviewState = {
 };
 
 export default function OverviewPage() {
+	const queryClient = useQueryClient();
 	const [overview, setOverview] = useState<OverviewState>(emptyOverview);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
@@ -50,10 +53,10 @@ export default function OverviewPage() {
 		setLoading(true);
 		setError("");
 		const results = await Promise.allSettled([
-			apiRequest<Dataset[]>("/business-data"),
-			apiRequest<Dashboard[]>("/dashboards?page=1&limit=6"),
-			apiRequest<Conversation[]>("/conversations?page=1&limit=5"),
-			apiRequest<QueryRecord[]>("/query/history"),
+			queryClient.fetchQuery(workspaceQueries.datasets()),
+			queryClient.fetchQuery(workspaceQueries.dashboards(1, 6)),
+			queryClient.fetchQuery(workspaceQueries.conversations(1, 5)),
+			queryClient.fetchQuery(workspaceQueries.queryHistory()),
 		]);
 		const [datasets, dashboards, conversations, queries] = results;
 		const failures = results.filter((result) => result.status === "rejected");
@@ -68,18 +71,18 @@ export default function OverviewPage() {
 			);
 		} else {
 			setOverview({
-				datasets: datasets.status === "fulfilled" ? datasets.value.data : [],
+				datasets: datasets.status === "fulfilled" ? datasets.value : [],
 				dashboards:
-					dashboards.status === "fulfilled" ? dashboards.value.data : [],
+					dashboards.status === "fulfilled" ? dashboards.value : [],
 				conversations:
-					conversations.status === "fulfilled" ? conversations.value.data : [],
-				queries: queries.status === "fulfilled" ? queries.value.data : [],
+					conversations.status === "fulfilled" ? conversations.value : [],
+				queries: queries.status === "fulfilled" ? queries.value : [],
 			});
 			if (failures.length)
 				setError("Some workspace information could not be loaded.");
 		}
 		setLoading(false);
-	}, []);
+	}, [queryClient]);
 
 	useEffect(() => {
 		void loadOverview();

@@ -9,6 +9,7 @@ import {
 	useState,
 	type FormEvent,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowDown,
 	ArrowLeft,
@@ -31,6 +32,7 @@ import type {
 	QueryRecord,
 	RefreshedWidgetData,
 } from "@/lib/types";
+import { workspaceQueries, workspaceQueryKeys } from "@/lib/workspace-queries";
 import { ResultChart, ResultTable } from "@/components/result-visual";
 import {
 	EmptyState,
@@ -57,6 +59,7 @@ const widgetTypes = [
 export default function DashboardDetailPage() {
 	const params = useParams<{ id: string }>();
 	const id = params?.id ?? "";
+	const queryClient = useQueryClient();
 	const [dashboard, setDashboard] = useState<Dashboard | null>(null);
 	const [queries, setQueries] = useState<QueryRecord[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -88,15 +91,13 @@ export default function DashboardDetailPage() {
 		setLoading(true);
 		setError("");
 		try {
-			const [dashboardResponse, queryResponse] = await Promise.all([
-				apiRequest<Dashboard>(`/dashboards/${id}`),
-				apiRequest<QueryRecord[]>("/query/history"),
+			const [dashboardData, queryData] = await Promise.all([
+				queryClient.fetchQuery(workspaceQueries.dashboard(id)),
+				queryClient.fetchQuery(workspaceQueries.queryHistory()),
 			]);
-			setDashboard(dashboardResponse.data);
-			setNameDraft(dashboardResponse.data.name);
-			setQueries(
-				queryResponse.data.filter((query) => query.status === "SUCCESS"),
-			);
+			setDashboard(dashboardData);
+			setNameDraft(dashboardData.name);
+			setQueries(queryData.filter((query) => query.status === "SUCCESS"));
 		} catch (caught) {
 			setError(
 				caught instanceof ApiError
@@ -106,7 +107,7 @@ export default function DashboardDetailPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [id]);
+	}, [id, queryClient]);
 
 	useEffect(() => {
 		void load();
@@ -122,6 +123,12 @@ export default function DashboardDetailPage() {
 				"PATCH",
 				{ name: nameDraft.trim() },
 			);
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboard(id),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboards,
+			});
 			setDashboard((current) =>
 				current ? { ...current, ...response.data } : current,
 			);
@@ -168,6 +175,12 @@ export default function DashboardDetailPage() {
 				position: dashboard.widgets?.length ?? 0,
 				configuration,
 			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboard(id),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboards,
+			});
 			setShowWidget(false);
 			setWidgetTitle("");
 			setQueryId("");
@@ -208,6 +221,12 @@ export default function DashboardDetailPage() {
 		try {
 			await apiRequest<null>(`/dashboards/${id}/widgets/${widget.id}`, {
 				method: "DELETE",
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboard(id),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboards,
 			});
 			setDashboard((current) =>
 				current
@@ -266,6 +285,12 @@ export default function DashboardDetailPage() {
 					configuration,
 				},
 			);
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboard(id),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboards,
+			});
 			setDashboard((current) =>
 				current
 					? {
@@ -313,6 +338,12 @@ export default function DashboardDetailPage() {
 					})),
 				},
 			);
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboard(id),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboards,
+			});
 			setDashboard((current) =>
 				current ? { ...current, widgets: response.data } : current,
 			);

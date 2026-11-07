@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowRight,
 	BarChart3,
@@ -11,8 +12,9 @@ import {
 	Sparkles,
 	Trash2,
 } from "lucide-react";
-import { ApiError, apiRequest, jsonRequest } from "@/lib/api";
+import { ApiError, jsonRequest, apiRequest } from "@/lib/api";
 import type { Dashboard } from "@/lib/types";
+import { workspaceQueries, workspaceQueryKeys } from "@/lib/workspace-queries";
 import {
 	EmptyState,
 	ErrorNotice,
@@ -30,6 +32,7 @@ const palette = [
 
 export default function DashboardsPage() {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [dashboards, setDashboards] = useState<Dashboard[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
@@ -42,10 +45,10 @@ export default function DashboardsPage() {
 		setLoading(true);
 		setError("");
 		try {
-			const response = await apiRequest<Dashboard[]>(
-				"/dashboards?page=1&limit=100",
+			const data = await queryClient.fetchQuery(
+				workspaceQueries.dashboards(1, 100),
 			);
-			setDashboards(response.data);
+			setDashboards(data);
 		} catch (caught) {
 			setError(
 				caught instanceof ApiError
@@ -55,7 +58,7 @@ export default function DashboardsPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [queryClient]);
 
 	useEffect(() => {
 		void load();
@@ -69,6 +72,9 @@ export default function DashboardsPage() {
 			const response = await jsonRequest<Dashboard>("/dashboards", "POST", {
 				name,
 				description,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboards,
 			});
 			router.push(`/dashboards/${response.data.id}`);
 		} catch (caught) {
@@ -88,6 +94,9 @@ export default function DashboardsPage() {
 		try {
 			await apiRequest<null>(`/dashboards/${dashboard.id}`, {
 				method: "DELETE",
+			});
+			await queryClient.invalidateQueries({
+				queryKey: workspaceQueryKeys.dashboards,
 			});
 			setDashboards((current) =>
 				current.filter((item) => item.id !== dashboard.id),

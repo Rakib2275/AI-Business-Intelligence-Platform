@@ -1,13 +1,141 @@
 import json
+import math
 import re
-from typing import Any
+from datetime import date, datetime
 
 import httpx
 from fastapi import HTTPException
 
 from app.config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
-from app.schemas.query_schema import BusinessInsights, SummarizeRequest, TextToSqlRequest
+from app.schemas.query_schema import (
+    BusinessInsights,
+    ChartConfiguration,
+    SummarizeRequest,
+    TextToSqlRequest,
+)
 from app.services.sql_validator import validate_read_only_sql
+
+
+def _is_numeric_value(value: object) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        try:
+            return math.isfinite(value)
+        except OverflowError:
+            return False
+    if isinstance(value, str) and value.strip():
+        try:
+            return math.isfinite(float(value.replace(",", "").strip()))
+        except ValueError:
+            return False
+    return False
+
+
+def _is_date_value(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    normalized = value.strip()
+    if not normalized:
+        return False
+    try:
+        date.fromisoformat(normalized)
+        return True
+    except ValueError:
+        try:
+            datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+            return True
+        except ValueError:
+            return False
+
+
+def suggest_chart_configuration(request: SummarizeRequest) -> ChartConfiguration:
+    if not request.rows:
+        return ChartConfiguration(type="TABLE", series=[])
+
+    columns = list(request.rows[0])
+    values_by_column = {
+        column: [
+            row.get(column)
+            for row in request.rows
+            if row.get(column) is not None
+        ]
+        for column in columns
+    }
+    date_columns = [
+        column
+        for column in columns
+        if re.search(r"date|time|month|year|week|quarter|period", column, re.I)
+        or (
+            values_by_column[column]
+            and all(_is_date_value(value) for value in values_by_column[column])
+        )
+    ]
+    numeric_columns = [
+        column
+        for column in columns
+        if column not in date_columns
+        and values_by_column[column]
+        and all(_is_numeric_value(value) for value in values_by_column[column])
+    ]
+    category_columns = [
+        column
+        for column in columns
+        if column not in date_columns
+        and column not in numeric_columns
+        and values_by_column[column]
+    ]
+
+    if not numeric_columns:
+        return ChartConfiguration(type="TABLE", series=[])
+    if len(request.rows) == 1:
+        return ChartConfiguration(type="KPI_CARDS", series=numeric_columns)
+
+    time_axis = next((column for column in date_columns if column in columns), None)
+    if time_axis:
+        return ChartConfiguration(
+            type="LINE_CHART",
+            xAxis=time_axis,
+            series=numeric_columns,
+        )
+
+    category_axis = category_columns[0] if category_columns else None
+    question = request.question.casefold()
+    asks_for_share = any(
+        term in question
+        for term in (
+            "share",
+            "proportion",
+            "percentage",
+            "distribution",
+            "composition",
+            "contribution",
+            "অংশ",
+            "শতাংশ",
+            "বণ্টন",
+            "বন্টন",
+        )
+    )
+    if category_axis and asks_for_share:
+        distinct_categories = {
+            str(row.get(category_axis))
+            for row in request.rows
+            if row.get(category_axis) is not None
+        }
+        if 2 <= len(distinct_categories) <= 8:
+            return ChartConfiguration(
+                type="PIE_CHART",
+                xAxis=category_axis,
+                series=numeric_columns[:1],
+            )
+
+    if category_axis:
+        return ChartConfiguration(
+            type="BAR_CHART",
+            xAxis=category_axis,
+            series=numeric_columns,
+        )
+    return ChartConfiguration(type="TABLE", series=[])
 
 
 def _require_api_key() -> str:
@@ -104,6 +232,7 @@ async def analyze_business_results(request: SummarizeRequest) -> BusinessInsight
             summary="The query returned no matching rows.",
             findings=[],
             recommendations=[],
+            chart_configuration=suggest_chart_configuration(request),
         )
 
     content = await _complete(
@@ -135,4 +264,7 @@ async def analyze_business_results(request: SummarizeRequest) -> BusinessInsight
             default=str,
         ),
     )
-    return _parse_business_insights(content)
+    insights = _parse_business_insights(content)
+    return insights.model_copy(
+        update={"chart_configuration": suggest_chart_configuration(request)}
+    )

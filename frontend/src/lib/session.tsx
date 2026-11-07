@@ -9,6 +9,7 @@ import {
 	useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ApiError, apiRequest } from "@/lib/api";
 import type { User } from "@/lib/types";
 
@@ -27,6 +28,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 	const [loading, setLoading] = useState(true);
 	const pathname = usePathname();
 	const router = useRouter();
+	const queryClient = useQueryClient();
 
 	const refresh = useCallback(async () => {
 		const response = await apiRequest<User>("/auth/me");
@@ -49,9 +51,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 			await apiRequest<null>("/auth/logout", { method: "POST" });
 		} finally {
 			setUser(null);
+			queryClient.clear();
 			router.replace("/login");
 		}
-	}, [router]);
+	}, [queryClient, router]);
 
 	useEffect(() => {
 		let active = true;
@@ -65,6 +68,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 			.catch((error: unknown) => {
 				if (active) {
 					setUser(null);
+					queryClient.clear();
 					if (!(error instanceof ApiError) || error.status !== 401) {
 						console.error("Session check failed:", error);
 					}
@@ -76,7 +80,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 		return () => {
 			active = false;
 		};
-	}, []);
+	}, [queryClient]);
 
 	useEffect(() => {
 		if (!loading && !user && pathname !== "/login") router.replace("/login");
