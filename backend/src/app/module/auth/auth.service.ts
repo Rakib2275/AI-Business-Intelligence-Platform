@@ -31,7 +31,7 @@ const registeruser = async (payload: IRegisteruserPayload) => {
 	});
 
 	if (isUserExists) {
-		throw new Error("User with this email already exists");
+		throw new AppError("User with this email already exists.", 409);
 	}
 
 	const hashedPassword = await bcrypt.hash(password, 8);
@@ -41,13 +41,6 @@ const registeruser = async (payload: IRegisteruserPayload) => {
 	const otpKey = `user-registration-otp:${email}`
 	const otpValue = crypto.randomInt(100000, 1000000).toString();
 
-	await redisClient.set(otpKey, otpValue, {
-		expiration: {
-			type: "EX",
-			value: expirationSeconds
-		}
-	})
-
 	const userRegistrationKey = `user-registration-data:${email}`
 	const redisUserDataPayload = {
 		name,
@@ -55,16 +48,40 @@ const registeruser = async (payload: IRegisteruserPayload) => {
 		password: hashedPassword,
 	}
 
-	await redisClient.set(
-		userRegistrationKey, 
-		JSON.stringify(redisUserDataPayload), 
-		{
+	if (!redisClient.isReady) {
+		throw new AppError(
+			"Email verification is temporarily unavailable because the OTP service is unreachable. Please try again later.",
+			503,
+		);
+	}
+
+	try {
+		await redisClient.set(otpKey, otpValue, {
 			expiration: {
 				type: "EX",
 				value: expirationSeconds
 			}
-		}
-	)
+		});
+		await redisClient.set(
+			userRegistrationKey,
+			JSON.stringify(redisUserDataPayload),
+			{
+				expiration: {
+					type: "EX",
+					value: expirationSeconds
+				}
+			}
+		);
+	} catch (error) {
+		console.error(
+			"Could not store the registration OTP in Redis.",
+			error instanceof Error ? error.message : error,
+		);
+		throw new AppError(
+			"Email verification is temporarily unavailable because the OTP service is unreachable. Please try again later.",
+			503,
+		);
+	}
 
 
 	const tempatePath = path.join(process.cwd(), "src/app/templates/registation-user-otp.ejs")
@@ -79,14 +96,23 @@ const registeruser = async (payload: IRegisteruserPayload) => {
 
 	const html = await ejs.renderFile(tempatePath, templateData)
 
-	await transporter.sendMail({
-		from: config.email_sender,
-		to: email,
-		subject: "Email Verification",
-		// text : `Your OTP is ${otp}`
-		// html: `<h1>Your OTP is ${otp}</h1>`
-		html
-	})
+	try {
+		await transporter.sendMail({
+			from: config.email_sender,
+			to: email,
+			subject: "Email Verification",
+			html
+		});
+	} catch (error) {
+		console.error(
+			"Could not send the registration verification email.",
+			error instanceof Error ? error.message : error,
+		);
+		throw new AppError(
+			"Verification email could not be sent. Please check the email service configuration and try again.",
+			503,
+		);
+	}
 	
 };
 
@@ -103,11 +129,11 @@ const verifyuserEmail = async (
 	});
 
 	if (isUserExist?.status === "BLOCKED") {
-		throw new Error("User is Blocked")
+		throw new AppError("User is blocked.", 403)
 	}
 
 	if (isUserExist?.status === UserStatus.DELETED) {
-		throw new Error("User is Deleted")
+		throw new AppError("User is deleted.", 403)
 	}
 
 	if (isUserExist) {
@@ -119,11 +145,11 @@ const verifyuserEmail = async (
 	const redisOtp = await redisClient.get(otpKey)
 
 	if (!redisOtp) {
-		throw new Error("Invalid OTP")
+		throw new AppError("Verification code is invalid or expired. Request a new code and try again.", 400)
 	}
 
 	if (redisOtp !== otp) {
-		throw new Error("OTP Does Not Match")
+		throw new AppError("Verification code does not match.", 400)
 	}
 
 	const userRegistrationKey = `user-registration-data:${email}`
@@ -131,7 +157,7 @@ const verifyuserEmail = async (
 	const redisuserData = await redisClient.get(userRegistrationKey)
 
 	if(!redisuserData){
-		throw new Error ("user Doesnt Exist");
+		throw new AppError("Registration request is invalid or expired. Create the account again.", 400);
 	}
 
 	const userPayload : IRegisteruserPayload = JSON.parse(redisuserData)

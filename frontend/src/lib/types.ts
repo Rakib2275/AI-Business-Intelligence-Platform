@@ -51,6 +51,8 @@ export type ConversationMessage = {
 			series?: string[];
 		};
 		analysisAvailable?: boolean;
+		findings?: string[];
+		recommendations?: string[];
 	} | null;
 	createdAt: string;
 };
@@ -89,6 +91,8 @@ export type QueryAnswer = {
 	columns: string[];
 	chartConfiguration: ChartConfiguration;
 	summary: string;
+	findings: string[];
+	recommendations: string[];
 	analysisWarning?: string;
 	truncated: boolean;
 };

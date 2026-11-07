@@ -36,7 +36,13 @@ class SummarizeRequest(BaseModel):
 
     question: str = Field(min_length=3, max_length=1000)
     rows: list[dict[str, object]] = Field(max_length=50)
+    result_count: int = Field(ge=0, le=500)
+    result_truncated: bool = False
 
 
-class SummaryResponse(BaseModel):
+class BusinessInsights(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     summary: str
+    findings: list[str] = Field(max_length=5)
+    recommendations: list[str] = Field(max_length=3)

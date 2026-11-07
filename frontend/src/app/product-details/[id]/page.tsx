@@ -18,6 +18,7 @@ import type { Product } from "@/lib/types";
 
 export default function ProductDetailsPage() {
 	const params = useParams<{ id: string }>();
+	const id = params?.id ?? "";
 	const [product, setProduct] = useState<Product | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
@@ -56,7 +57,13 @@ export default function ProductDetailsPage() {
 
 	useEffect(() => {
 		let active = true;
-		const demoProduct = demoProducts.find((item) => item.id === params.id);
+		if (!id) {
+			setError("This product could not be found.");
+			setLoading(false);
+			return;
+		}
+
+		const demoProduct = demoProducts.find((item) => item.id === id);
 
 		if (demoProduct) {
 			setProduct(demoProduct);
@@ -69,7 +76,7 @@ export default function ProductDetailsPage() {
 		apiRequest<Product[]>("/products")
 			.then(({ data }) => {
 				if (!active) return;
-				const foundProduct = data.find((item) => item.id === params.id);
+				const foundProduct = data.find((item) => item.id === id);
 				if (foundProduct) {
 					setProduct(foundProduct);
 				} else {
@@ -92,7 +99,7 @@ export default function ProductDetailsPage() {
 		return () => {
 			active = false;
 		};
-	}, [params.id]);
+	}, [id]);
 
 	return (
 		<div className="product-details-page">

@@ -56,7 +56,7 @@ const widgetTypes = [
 
 export default function DashboardDetailPage() {
 	const params = useParams<{ id: string }>();
-	const id = params.id;
+	const id = params?.id ?? "";
 	const [dashboard, setDashboard] = useState<Dashboard | null>(null);
 	const [queries, setQueries] = useState<QueryRecord[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -81,7 +81,10 @@ export default function DashboardDetailPage() {
 	>({});
 
 	const load = useCallback(async () => {
-		if (!id) return;
+		if (!id) {
+			setLoading(false);
+			return;
+		}
 		setLoading(true);
 		setError("");
 		try {

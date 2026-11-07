@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 
 from app.config import AI_SERVICE_API_KEY
 from app.schemas.query_schema import (
+    BusinessInsights,
     SummarizeRequest,
-    SummaryResponse,
     TextToSqlRequest,
     TextToSqlResponse,
 )
-from app.services.llm_service import generate_sql, summarize_results
+from app.services.llm_service import analyze_business_results, generate_sql
 
 
 async def require_service_key(x_api_key: str | None = Header(default=None)) -> None:
@@ -33,8 +33,8 @@ async def text_to_sql(request: TextToSqlRequest) -> TextToSqlResponse:
     return TextToSqlResponse(sql=await generate_sql(request))
 
 
-@router.post("/text-to-sql/summarize", response_model=SummaryResponse)
-async def summarize(request: SummarizeRequest) -> SummaryResponse:
-    return SummaryResponse(
-        summary=await summarize_results(request.question, request.rows),
-    )
+@router.post("/text-to-sql/insights", response_model=BusinessInsights)
+async def business_insights(
+    request: SummarizeRequest,
+) -> BusinessInsights:
+    return await analyze_business_results(request)

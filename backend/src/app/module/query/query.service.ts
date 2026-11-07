@@ -103,20 +103,48 @@ const generateSql = async (
 
 const summarizeResults = async (question: string, rows: Record<string, unknown>[]) => {
 	if (!rows.length) {
-		return { summary: "The query returned no matching rows.", analysisWarning: undefined };
+		return {
+			summary: "The query returned no matching rows.",
+			findings: [],
+			recommendations: [],
+			analysisWarning: undefined,
+		};
 	}
 	try {
-		const result = await callAiService<{ summary?: unknown }>(
-			"text-to-sql/summarize",
-			{ question, rows: rows.slice(0, 50) },
+		const result = await callAiService<{
+			summary?: unknown;
+			findings?: unknown;
+			recommendations?: unknown;
+		}>(
+			"text-to-sql/insights",
+			{
+				question,
+				rows: rows.slice(0, 50),
+				result_count: rows.length,
+				result_truncated: rows.length === maxResultRows,
+			},
 		);
-		if (typeof result.summary !== "string" || !result.summary.trim()) {
-			throw new Error("AI service returned an invalid summary response.");
+		if (
+			typeof result.summary !== "string" ||
+			!result.summary.trim() ||
+			!Array.isArray(result.findings) ||
+			!result.findings.every((item) => typeof item === "string") ||
+			!Array.isArray(result.recommendations) ||
+			!result.recommendations.every((item) => typeof item === "string")
+		) {
+			throw new Error("AI service returned an invalid business insights response.");
 		}
-		return { summary: result.summary.trim(), analysisWarning: undefined };
+		return {
+			summary: result.summary.trim(),
+			findings: result.findings,
+			recommendations: result.recommendations,
+			analysisWarning: undefined,
+		};
 	} catch {
 		return {
 			summary: "The query completed, but its AI-generated analysis is unavailable.",
+			findings: [],
+			recommendations: [],
 			analysisWarning: "AI analysis could not be generated. Query results are available.",
 		};
 	}
@@ -177,6 +205,8 @@ const runQuery = async (
 	let stage: "GENERATION" | "VALIDATION" | "EXECUTION" | "ANALYSIS" = "GENERATION";
 	let rows: Record<string, unknown>[];
 	let summary: string;
+	let findings: string[];
+	let recommendations: string[];
 	let analysisWarning: string | undefined;
 	try {
 		const tableName = dataset.tableName.toLowerCase();
@@ -210,6 +240,8 @@ const runQuery = async (
 		stage = "ANALYSIS";
 		const analysis = await summarizeResults(question, rows);
 		summary = analysis.summary;
+		findings = analysis.findings;
+		recommendations = analysis.recommendations;
 		analysisWarning = analysis.analysisWarning;
 	} catch {
 		const validationRejected = stage === "VALIDATION";
@@ -312,6 +344,8 @@ const runQuery = async (
 						columns,
 						chartConfiguration,
 						analysisAvailable: !analysisWarning,
+						findings,
+						recommendations,
 					},
 				},
 			],
@@ -379,6 +413,8 @@ const runQuery = async (
 		columns,
 		chartConfiguration,
 		summary,
+		findings,
+		recommendations,
 		analysisWarning,
 		truncated: rows.length === maxResultRows,
 	};
