@@ -1,7 +1,5 @@
-<div align="center">
 
-<img src="<img width="1918" height="911" alt="Screenshot 2026-11-10 174317" src="https://github.com/user-attachments/assets/afbbc617-6aec-4189-9d3c-89cf68ffbc8e" />
-" width="100%" alt="AI Business Intelligence Platform">
+<img width="1918" height="911" alt="Screenshot 2026-11-10 174317" src="https://github.com/user-attachments/assets/afbbc617-6aec-4189-9d3c-89cf68ffbc8e" />
 
 # AI-Powered Business Intelligence Platform
 
