@@ -9,7 +9,6 @@ import {
 	Bot,
 	ChevronDown,
 	Command,
-	Database,
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
@@ -147,8 +146,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 					<span>
 						<Activity size={13} /> NORTHSTAR INTELLIGENCE
 					</span>
+					<span>Contact for: rakib932676@gmail.com | mda457956@gmail.com</span>
 					<span>
-						<Database size={13} /> Your data stays yours
+						Developed by Rakib, Asad, Rasel
 					</span>
 				</footer>
 			</div>
