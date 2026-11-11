@@ -6,11 +6,13 @@ import {
 	ArrowRight,
 	ArrowUpRight,
 	BarChart3,
+	ChevronDown,
 	Database,
 	House,
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
+	Menu,
 	PackagePlus,
 	Search,
 	ShoppingCart,
@@ -248,9 +250,9 @@ export default function HomePage() {
 
 	return (
 		<div
-			className={`public-home ${isCustomer || isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
+			className={`public-home ${isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
 		>
-			{(isCustomer || isAdmin) && (
+			{isAdmin && (
 				<aside className="public-customer-sidebar">
 					<div className="nav-label">WORKSPACE</div>
 					<nav
@@ -329,7 +331,7 @@ export default function HomePage() {
 							noviq<span>.</span>
 						</span>
 					</Link>
-					<label className="customer-navbar-search">
+					<div className="customer-navbar-search" role="search">
 						<Search size={17} aria-hidden="true" />
 						<input
 							type="search"
@@ -338,7 +340,19 @@ export default function HomePage() {
 							value={productSearch}
 							onChange={(event) => setProductSearch(event.target.value)}
 						/>
-					</label>
+						<button
+							className="customer-navbar-search-button"
+							type="button"
+							onClick={() =>
+								document.getElementById("public-products")?.scrollIntoView({
+									behavior: "smooth",
+								})
+							}
+						>
+							<Search size={15} aria-hidden="true" />
+							Search
+						</button>
+					</div>
 					<div className="customer-navbar-actions">
 						<div className="customer-cart">
 							<button
@@ -384,11 +398,14 @@ export default function HomePage() {
 							)}
 						</div>
 						{currentUser && (
-							<AccountMenu
-								user={currentUser}
-								onLogout={() => void handleLogout()}
-								logoutPending={loggingOut}
-							/>
+							<div className="customer-account-action">
+								<span>Account</span>
+								<AccountMenu
+									user={currentUser}
+									onLogout={() => void handleLogout()}
+									logoutPending={loggingOut}
+								/>
+							</div>
 						)}
 					</div>
 				</header>
@@ -468,6 +485,47 @@ export default function HomePage() {
 					</nav>
 				</header>
 			)}
+			{isCustomer && (
+				<nav className="customer-category-nav" aria-label="Product categories">
+					<button
+						className={`customer-category-all ${selectedBrand ? "" : "is-active"}`}
+						type="button"
+						onClick={() => {
+							setProductSearch("");
+							setSelectedBrand("");
+							setSelectedLocation("");
+							setMinimumPrice("");
+							setMaximumPrice("");
+						}}
+					>
+						<Menu size={17} aria-hidden="true" />
+						All Categories
+						<ChevronDown size={15} aria-hidden="true" />
+					</button>
+					<div className="customer-category-links">
+						{brands.map((brand) => (
+							<button
+								className={selectedBrand === brand ? "is-active" : ""}
+								type="button"
+								key={brand}
+								aria-pressed={selectedBrand === brand}
+								onClick={() => {
+									setProductSearch("");
+									setSelectedBrand(brand);
+									setSelectedLocation("");
+									setMinimumPrice("");
+									setMaximumPrice("");
+								}}
+							>
+								{brand}
+							</button>
+						))}
+					</div>
+					<Link className="customer-category-dashboard" href="/dashboard">
+						Dashboard
+					</Link>
+				</nav>
+			)}
 
 			<main className={`public-dashboard ${isCustomer ? "public-storefront-dashboard" : ""}`}>
 				{!isCustomer && !sessionLoading && <section className="public-hero">
@@ -537,7 +595,11 @@ export default function HomePage() {
 					</div>
 				</section>}
 
-				<section className="public-products" aria-labelledby="public-products-title">
+				<section
+					className="public-products"
+					id="public-products"
+					aria-labelledby="public-products-title"
+				>
 					{isCustomer && (
 						<div className="customer-mobile-filters">
 							<strong>Filter products</strong>
