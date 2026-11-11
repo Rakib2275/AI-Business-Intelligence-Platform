@@ -9,11 +9,8 @@ import {
 	Bot,
 	ChevronDown,
 	Command,
-<<<<<<< HEAD
 	Database,
 	House,
-=======
->>>>>>> 4ab65f85cfaabe9cf1edff6501c374af7a1c4145
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
