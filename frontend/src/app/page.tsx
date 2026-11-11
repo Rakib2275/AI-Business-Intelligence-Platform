@@ -13,6 +13,7 @@ import {
 	LogOut,
 	Menu,
 	MessageSquareText,
+	Menu,
 	PackagePlus,
 	Search,
 	ShoppingCart,
@@ -313,9 +314,9 @@ export default function HomePage() {
 
 	return (
 		<div
-			className={`public-home ${isCustomer || isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
+			className={`public-home ${isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
 		>
-			{(isCustomer || isAdmin) && (
+			{isAdmin && (
 				<aside className="public-customer-sidebar">
 					<div className="nav-label">WORKSPACE</div>
 					<nav
@@ -394,7 +395,7 @@ export default function HomePage() {
 							noviq<span>.</span>
 						</span>
 					</Link>
-					<label className="customer-navbar-search">
+					<div className="customer-navbar-search" role="search">
 						<Search size={17} aria-hidden="true" />
 						<input
 							type="search"
@@ -403,7 +404,19 @@ export default function HomePage() {
 							value={productSearch}
 							onChange={(event) => setProductSearch(event.target.value)}
 						/>
-					</label>
+						<button
+							className="customer-navbar-search-button"
+							type="button"
+							onClick={() =>
+								document.getElementById("public-products")?.scrollIntoView({
+									behavior: "smooth",
+								})
+							}
+						>
+							<Search size={15} aria-hidden="true" />
+							Search
+						</button>
+					</div>
 					<div className="customer-navbar-actions">
 						<div className="customer-cart">
 							<button
@@ -449,11 +462,14 @@ export default function HomePage() {
 							)}
 						</div>
 						{currentUser && (
-							<AccountMenu
-								user={currentUser}
-								onLogout={() => void handleLogout()}
-								logoutPending={loggingOut}
-							/>
+							<div className="customer-account-action">
+								<span>Account</span>
+								<AccountMenu
+									user={currentUser}
+									onLogout={() => void handleLogout()}
+									logoutPending={loggingOut}
+								/>
+							</div>
 						)}
 					</div>
 				</header>
@@ -535,144 +551,29 @@ export default function HomePage() {
 			)}
 			{isCustomer && (
 				<nav className="customer-category-nav" aria-label="Product categories">
-					<div ref={categoryMenuRef} style={{ position: "relative", flex: "0 0 auto" }}>
-						<button
-							className={`customer-category-all ${selectedCategory || selectedBrand ? "" : "is-active"}`}
-							type="button"
-							aria-expanded={categoryMenuOpen}
-							aria-controls="customer-category-options"
-							onClick={() => setCategoryMenuOpen((open) => !open)}
-						>
-							<Menu size={17} aria-hidden="true" />
-							{selectedCategory || selectedBrand || "All Categories"}
-							<ChevronDown
-								size={15}
-								aria-hidden="true"
-								style={{
-									transform: categoryMenuOpen ? "rotate(180deg)" : undefined,
-									transition: "transform 160ms ease",
-								}}
-							/>
-						</button>
-						{categoryMenuOpen && (
-							<div
-								id="customer-category-options"
-								role="group"
-								aria-label="Choose a product category"
-								style={{
-									position: "absolute",
-									top: "calc(100% + 8px)",
-									left: 0,
-									zIndex: 30,
-									display: "grid",
-									gap: 4,
-									width: 220,
-									maxHeight: "min(60vh, 360px)",
-									overflowY: "auto",
-									padding: 8,
-									border: "1px solid #e6e9ed",
-									borderRadius: 12,
-									background: "#fff",
-									boxShadow: "0 12px 32px rgb(23 32 51 / 14%)",
-								}}
-							>
-								<button
-									type="button"
-									aria-pressed={!selectedCategory && !selectedBrand}
-									onClick={() => {
-										setProductSearch("");
-										setSelectedCategory("");
-										setSelectedBrand("");
-										setSelectedLocation("");
-										setMinimumPrice("");
-										setMaximumPrice("");
-										setCategoryMenuOpen(false);
-									}}
-									style={categoryMenuItemStyle}
-								>
-									All Categories
-								</button>
-								{productCategories.map((category) => (
-									<button
-										type="button"
-										key={category.label}
-										aria-pressed={selectedCategory === category.label}
-										onClick={() => {
-											setProductSearch("");
-											setSelectedCategory(category.label);
-											setSelectedBrand("");
-											setSelectedLocation("");
-											setMinimumPrice("");
-											setMaximumPrice("");
-											setCategoryMenuOpen(false);
-										}}
-										style={categoryMenuItemStyle}
-									>
-										{category.label}
-									</button>
-								))}
-								{brands.map((brand) => (
-									<button
-										type="button"
-										key={brand}
-										aria-pressed={selectedBrand === brand}
-										onClick={() => {
-											setProductSearch("");
-											setSelectedCategory("");
-											setSelectedBrand(brand);
-											setSelectedLocation("");
-											setMinimumPrice("");
-											setMaximumPrice("");
-											setCategoryMenuOpen(false);
-										}}
-										style={categoryMenuItemStyle}
-									>
-										{brand}
-									</button>
-								))}
-							</div>
-						)}
-					</div>
+					<Link className="customer-category-all" href="#public-products">
+						<Menu size={17} aria-hidden="true" />
+						All Categories
+						<ChevronDown size={15} aria-hidden="true" />
+					</Link>
 					<div className="customer-category-links">
-						{productCategories.map((category) => (
-							<button
-								className={selectedCategory === category.label ? "is-active" : ""}
-								type="button"
-								key={category.label}
-								aria-pressed={selectedCategory === category.label}
-								onClick={() => {
-									setProductSearch("");
-									setSelectedCategory(category.label);
-									setSelectedBrand("");
-									setSelectedLocation("");
-									setMinimumPrice("");
-									setMaximumPrice("");
-								}}
-							>
-								{category.label}
-							</button>
-						))}
-						{brands.map((brand) => (
-							<button
-								className={selectedBrand === brand ? "is-active" : ""}
-								type="button"
-								key={brand}
-								aria-pressed={selectedBrand === brand}
-								onClick={() => {
-									setProductSearch("");
-									setSelectedCategory("");
-									setSelectedBrand(brand);
-									setSelectedLocation("");
-									setMinimumPrice("");
-									setMaximumPrice("");
-								}}
-							>
-								{brand}
-							</button>
-						))}
+						<Link href="#public-products">Mobiles &amp; Tablets</Link>
+						<Link href="#public-products">Electronics</Link>
+						<Link className="is-highlighted" href="#public-products">Fashion</Link>
+						<Link href="#public-products">Beauty</Link>
+						<Link href="#public-products">Home &amp; Living</Link>
+						<Link href="#public-products">Appliances</Link>
+						<Link href="#public-products">Baby &amp; Kids</Link>
+						<Link href="#public-products">Grocery</Link>
+						<Link href="#public-products">Sports</Link>
+						<Link href="#public-products">Books</Link>
+						<Link className="customer-category-sale" href="#public-products">
+							<Zap size={15} aria-hidden="true" />
+							Flash Sale
+						</Link>
 					</div>
-					<Link className="customer-category-dashboard" href="/dashboard">
-						Dashboard
+					<Link className="customer-category-emistore" href="#public-products">
+						EMI Store
 					</Link>
 				</nav>
 			)}
@@ -745,7 +646,17 @@ export default function HomePage() {
 					</div>
 				</section>}
 
-				<section className="public-products" aria-labelledby="public-products-title">
+				<section
+					className="public-products"
+					id="public-products"
+					aria-labelledby="public-products-title"
+				>
+					{isCustomer && (
+						<div className="customer-mobile-filters">
+							<strong>Filter products</strong>
+							{productFilters}
+						</div>
+					)}
 					<div className="public-section-heading">
 						<div>
 							{!isCustomer && (
