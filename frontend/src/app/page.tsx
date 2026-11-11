@@ -13,7 +13,6 @@ import {
 	LogOut,
 	Menu,
 	MessageSquareText,
-	Menu,
 	PackagePlus,
 	Search,
 	ShoppingCart,
@@ -60,6 +59,10 @@ const categoryMenuItemStyle = {
 
 const productCategories = [
 	{
+		label: "Mobiles & Tablets",
+		keywords: ["mobile", "phone", "tablet", "watch"],
+	},
+	{
 		label: "Electronics",
 		keywords: ["headphone", "watch", "camera", "speaker", "audio", "gadget"],
 	},
@@ -68,8 +71,32 @@ const productCategories = [
 		keywords: ["sneaker", "backpack", "sunglasses", "fashion", "apparel"],
 	},
 	{
+		label: "Beauty",
+		keywords: ["beauty", "cosmetic", "makeup", "skincare"],
+	},
+	{
 		label: "Home & Living",
 		keywords: ["lamp", "chair", "coffee maker", "home", "furniture", "kitchen"],
+	},
+	{
+		label: "Appliances",
+		keywords: ["coffee maker", "appliance", "lamp"],
+	},
+	{
+		label: "Baby & Kids",
+		keywords: ["baby", "kids", "children", "toy"],
+	},
+	{
+		label: "Grocery",
+		keywords: ["grocery", "food", "snack", "coffee"],
+	},
+	{
+		label: "Sports",
+		keywords: ["sports", "fitness", "sneaker", "activity"],
+	},
+	{
+		label: "Books",
+		keywords: ["book", "reading"],
 	},
 ];
 
@@ -126,6 +153,27 @@ export default function HomePage() {
 		};
 	}, [categoryMenuOpen]);
 
+	const selectCategory = (category: string) => {
+		setProductSearch("");
+		setSelectedCategory(category);
+		setSelectedBrand("");
+		setSelectedLocation("");
+		setMinimumPrice("");
+		setMaximumPrice("");
+		document.getElementById("public-products")?.scrollIntoView({
+			behavior: "smooth",
+		});
+	};
+
+	const resetProductFilters = () => {
+		setProductSearch("");
+		setSelectedCategory("");
+		setSelectedBrand("");
+		setSelectedLocation("");
+		setMinimumPrice("");
+		setMaximumPrice("");
+	};
+
 	const filteredProducts = catalogProducts.filter((product) => {
 		const search = productSearch.trim().toLowerCase();
 		const searchableText =
@@ -147,6 +195,23 @@ export default function HomePage() {
 
 	const productFilters = (
 		<div className="customer-product-filters">
+			<label className="customer-filter-field">
+				<span>Category</span>
+				<select
+					value={selectedCategory}
+					onChange={(event) => {
+						setSelectedCategory(event.target.value);
+						setSelectedBrand("");
+					}}
+				>
+					<option value="">All categories</option>
+					{productCategories.map((category) => (
+						<option key={category.label} value={category.label}>
+							{category.label}
+						</option>
+					))}
+				</select>
+			</label>
 			<label className="customer-filter-field">
 				<span>Brand</span>
 				<select
@@ -314,9 +379,9 @@ export default function HomePage() {
 
 	return (
 		<div
-			className={`public-home ${isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
+			className={`public-home ${isCustomer || isAdmin ? "public-home-customer" : ""} ${isCustomer ? "public-home-storefront" : ""} ${isAdmin ? "public-home-admin" : ""}`}
 		>
-			{isAdmin && (
+			{(isCustomer || isAdmin) && (
 				<aside className="public-customer-sidebar">
 					<div className="nav-label">WORKSPACE</div>
 					<nav
@@ -551,33 +616,139 @@ export default function HomePage() {
 			)}
 			{isCustomer && (
 				<nav className="customer-category-nav" aria-label="Product categories">
-					<Link className="customer-category-all" href="#public-products">
-						<Menu size={17} aria-hidden="true" />
-						All Categories
-						<ChevronDown size={15} aria-hidden="true" />
-					</Link>
+					<div ref={categoryMenuRef} style={{ position: "relative", flex: "0 0 auto" }}>
+						<button
+							className={`customer-category-all ${selectedCategory || selectedBrand ? "" : "is-active"}`}
+							type="button"
+							aria-expanded={categoryMenuOpen}
+							aria-controls="customer-category-options"
+							onClick={() => setCategoryMenuOpen((open) => !open)}
+						>
+							<Menu size={17} aria-hidden="true" />
+							All Categories
+							<ChevronDown
+								size={15}
+								aria-hidden="true"
+								style={{
+									transform: categoryMenuOpen ? "rotate(180deg)" : undefined,
+									transition: "transform 160ms ease",
+								}}
+							/>
+						</button>
+						{categoryMenuOpen && (
+							<div
+								id="customer-category-options"
+								role="group"
+								aria-label="Choose a product category"
+								style={{
+									position: "absolute",
+									top: "calc(100% + 8px)",
+									left: 0,
+									zIndex: 30,
+									display: "grid",
+									gap: 4,
+									width: 220,
+									maxHeight: "min(60vh, 360px)",
+									overflowY: "auto",
+									padding: 8,
+									border: "1px solid #e6e9ed",
+									borderRadius: 12,
+									background: "#fff",
+									boxShadow: "0 12px 32px rgb(23 32 51 / 14%)",
+								}}
+							>
+								<button
+									type="button"
+									aria-pressed={!selectedCategory && !selectedBrand}
+									onClick={() => {
+										resetProductFilters();
+										setCategoryMenuOpen(false);
+									}}
+									style={categoryMenuItemStyle}
+								>
+									All Categories
+								</button>
+								{productCategories.map((category) => (
+									<button
+										type="button"
+										key={category.label}
+										aria-pressed={selectedCategory === category.label}
+										onClick={() => {
+											selectCategory(category.label);
+											setCategoryMenuOpen(false);
+										}}
+										style={categoryMenuItemStyle}
+									>
+										{category.label}
+									</button>
+								))}
+								{brands.map((brand) => (
+									<button
+										type="button"
+										key={brand}
+										aria-pressed={selectedBrand === brand}
+										onClick={() => {
+											setProductSearch("");
+											setSelectedCategory("");
+											setSelectedBrand(brand);
+											setSelectedLocation("");
+											setMinimumPrice("");
+											setMaximumPrice("");
+											setCategoryMenuOpen(false);
+										}}
+										style={categoryMenuItemStyle}
+									>
+										{brand}
+									</button>
+								))}
+							</div>
+						)}
+					</div>
 					<div className="customer-category-links">
-						<Link href="#public-products">Mobiles &amp; Tablets</Link>
-						<Link href="#public-products">Electronics</Link>
-						<Link className="is-highlighted" href="#public-products">Fashion</Link>
-						<Link href="#public-products">Beauty</Link>
-						<Link href="#public-products">Home &amp; Living</Link>
-						<Link href="#public-products">Appliances</Link>
-						<Link href="#public-products">Baby &amp; Kids</Link>
-						<Link href="#public-products">Grocery</Link>
-						<Link href="#public-products">Sports</Link>
-						<Link href="#public-products">Books</Link>
-						<Link className="customer-category-sale" href="#public-products">
+						{productCategories.map((category) => (
+							<button
+								className={`${selectedCategory === category.label ? "is-active" : ""} ${category.label === "Fashion" ? "is-highlighted" : ""}`}
+								type="button"
+								key={category.label}
+								aria-pressed={selectedCategory === category.label}
+								onClick={() => selectCategory(category.label)}
+							>
+								{category.label}
+							</button>
+						))}
+						<button
+							className="customer-category-sale"
+							type="button"
+							onClick={() => {
+								setProductSearch("");
+								setSelectedCategory("");
+								setSelectedBrand("");
+								setSelectedLocation("");
+								setMinimumPrice("");
+								setMaximumPrice("5000");
+								document.getElementById("public-products")?.scrollIntoView({
+									behavior: "smooth",
+								});
+							}}
+						>
 							<Zap size={15} aria-hidden="true" />
 							Flash Sale
-						</Link>
+						</button>
 					</div>
-					<Link className="customer-category-emistore" href="#public-products">
+					<button
+						className="customer-category-emistore"
+						type="button"
+						onClick={() => {
+							resetProductFilters();
+							document.getElementById("public-products")?.scrollIntoView({
+								behavior: "smooth",
+							});
+						}}
+					>
 						EMI Store
-					</Link>
+					</button>
 				</nav>
 			)}
-
 			<main className={`public-dashboard ${isCustomer ? "public-storefront-dashboard" : ""}`}>
 				{!isCustomer && !sessionLoading && <section className="public-hero">
 					<div className="public-hero-copy">
@@ -651,12 +822,6 @@ export default function HomePage() {
 					id="public-products"
 					aria-labelledby="public-products-title"
 				>
-					{isCustomer && (
-						<div className="customer-mobile-filters">
-							<strong>Filter products</strong>
-							{productFilters}
-						</div>
-					)}
 					<div className="public-section-heading">
 						<div>
 							{!isCustomer && (
