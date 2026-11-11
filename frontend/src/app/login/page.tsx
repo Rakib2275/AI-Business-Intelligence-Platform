@@ -193,6 +193,9 @@ export default function LoginPage() {
 					</div>
 					<div className="register-login-link">
 						New to Noviq? <Link href="/register">Create an account</Link>
+						<Link className="auth-home-link" href="/">
+							Home
+						</Link>
 					</div>
 				</div>
 				<div className="login-footnote">
