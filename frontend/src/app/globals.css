@@ -534,10 +534,10 @@ summary:focus-visible {
 	padding: 36px 42px 56px;
 }
 .app-footer {
-	display: flex;
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
 	min-height: 48px;
 	align-items: center;
-	justify-content: space-between;
 	padding: 0 42px;
 	border-top: 1px solid #e9ebef;
 	color: #9ca3af;
@@ -549,6 +549,13 @@ summary:focus-visible {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
+}
+.app-footer > span:nth-child(2) {
+	justify-content: center;
+	text-align: center;
+}
+.app-footer > span:last-child {
+	justify-content: flex-end;
 }
 .app-footer > span:first-child {
 	color: #737e8d;
@@ -3982,9 +3989,15 @@ summary:focus-visible {
 		padding: 24px 15px 48px;
 	}
 	.app-footer {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 6px;
 		min-height: 40px;
-		padding: 0 15px;
+		padding: 8px 15px;
 		font-size: 8px;
+	}
+	.app-footer > span:nth-child(2) {
+		min-width: 0;
+		line-height: 1.4;
 	}
 	.app-footer > span:last-child {
 		display: none;

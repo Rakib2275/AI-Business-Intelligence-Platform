@@ -9,8 +9,11 @@ import {
 	Bot,
 	ChevronDown,
 	Command,
+<<<<<<< HEAD
 	Database,
 	House,
+=======
+>>>>>>> 4ab65f85cfaabe9cf1edff6501c374af7a1c4145
 	LayoutDashboard,
 	LogOut,
 	MessageSquareText,
@@ -194,8 +197,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 					<span>
 						<Activity size={13} /> NOVIQ
 					</span>
+					<span>Contact for: rakib932676@gmail.com | mda457956@gmail.com</span>
 					<span>
-						<Database size={13} /> Your data stays yours
+						Developed by Rakib, Asad, Rasel
 					</span>
 				</footer>
 			</div>
