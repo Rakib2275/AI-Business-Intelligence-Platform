@@ -17,6 +17,7 @@ import {
 	Search,
 	ShoppingCart,
 	Sparkles,
+	Zap,
 } from "lucide-react";
 import { ApiError, apiRequest } from "@/lib/api";
 import { demoProducts } from "@/lib/demo-products";
@@ -487,42 +488,29 @@ export default function HomePage() {
 			)}
 			{isCustomer && (
 				<nav className="customer-category-nav" aria-label="Product categories">
-					<button
-						className={`customer-category-all ${selectedBrand ? "" : "is-active"}`}
-						type="button"
-						onClick={() => {
-							setProductSearch("");
-							setSelectedBrand("");
-							setSelectedLocation("");
-							setMinimumPrice("");
-							setMaximumPrice("");
-						}}
-					>
+					<Link className="customer-category-all" href="#public-products">
 						<Menu size={17} aria-hidden="true" />
 						All Categories
 						<ChevronDown size={15} aria-hidden="true" />
-					</button>
+					</Link>
 					<div className="customer-category-links">
-						{brands.map((brand) => (
-							<button
-								className={selectedBrand === brand ? "is-active" : ""}
-								type="button"
-								key={brand}
-								aria-pressed={selectedBrand === brand}
-								onClick={() => {
-									setProductSearch("");
-									setSelectedBrand(brand);
-									setSelectedLocation("");
-									setMinimumPrice("");
-									setMaximumPrice("");
-								}}
-							>
-								{brand}
-							</button>
-						))}
+						<Link href="#public-products">Mobiles &amp; Tablets</Link>
+						<Link href="#public-products">Electronics</Link>
+						<Link className="is-highlighted" href="#public-products">Fashion</Link>
+						<Link href="#public-products">Beauty</Link>
+						<Link href="#public-products">Home &amp; Living</Link>
+						<Link href="#public-products">Appliances</Link>
+						<Link href="#public-products">Baby &amp; Kids</Link>
+						<Link href="#public-products">Grocery</Link>
+						<Link href="#public-products">Sports</Link>
+						<Link href="#public-products">Books</Link>
+						<Link className="customer-category-sale" href="#public-products">
+							<Zap size={15} aria-hidden="true" />
+							Flash Sale
+						</Link>
 					</div>
-					<Link className="customer-category-dashboard" href="/dashboard">
-						Dashboard
+					<Link className="customer-category-emistore" href="#public-products">
+						EMI Store
 					</Link>
 				</nav>
 			)}

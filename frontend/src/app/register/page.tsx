@@ -269,6 +269,9 @@ export default function RegisterPage() {
 					</div>
 					<div className="register-login-link">
 						Already have an account? <Link href="/login">Sign in</Link>
+						<Link className="auth-home-link" href="/">
+							Home
+						</Link>
 					</div>
 				</div>
 				<div className="login-footnote">
