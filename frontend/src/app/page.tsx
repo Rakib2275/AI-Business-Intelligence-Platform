@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
 	ArrowRight,
@@ -11,6 +11,7 @@ import {
 	House,
 	LayoutDashboard,
 	LogOut,
+	Menu,
 	MessageSquareText,
 	Menu,
 	PackagePlus,
@@ -42,6 +43,36 @@ const capabilities = [
 	},
 ];
 
+const categoryMenuItemStyle = {
+	display: "flex",
+	width: "100%",
+	alignItems: "center",
+	padding: "10px 12px",
+	border: 0,
+	borderRadius: 8,
+	color: "#344054",
+	background: "transparent",
+	font: "inherit",
+	fontSize: 14,
+	textAlign: "left",
+	cursor: "pointer",
+} satisfies React.CSSProperties;
+
+const productCategories = [
+	{
+		label: "Electronics",
+		keywords: ["headphone", "watch", "camera", "speaker", "audio", "gadget"],
+	},
+	{
+		label: "Fashion",
+		keywords: ["sneaker", "backpack", "sunglasses", "fashion", "apparel"],
+	},
+	{
+		label: "Home & Living",
+		keywords: ["lamp", "chair", "coffee maker", "home", "furniture", "kitchen"],
+	},
+];
+
 export default function HomePage() {
 	const [currentUser, setCurrentUser] = useState<User | null>(null);
 	const [sessionLoading, setSessionLoading] = useState(true);
@@ -52,7 +83,10 @@ export default function HomePage() {
 	const [minimumPrice, setMinimumPrice] = useState("");
 	const [maximumPrice, setMaximumPrice] = useState("");
 	const [selectedBrand, setSelectedBrand] = useState("");
+	const [selectedCategory, setSelectedCategory] = useState("");
 	const [selectedLocation, setSelectedLocation] = useState("");
+	const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+	const categoryMenuRef = useRef<HTMLDivElement>(null);
 	const [loggingOut, setLoggingOut] = useState(false);
 	const [logoutError, setLogoutError] = useState("");
 	const [cartProductIds, setCartProductIds] = useState<string[]>([]);
@@ -69,6 +103,29 @@ export default function HomePage() {
 		...new Set(catalogProducts.map((product) => product.location).filter(Boolean)),
 	].sort((first, second) => first.localeCompare(second));
 
+	useEffect(() => {
+		if (!categoryMenuOpen) return;
+
+		const closeOnOutsideClick = (event: PointerEvent) => {
+			if (
+				event.target instanceof Node &&
+				!categoryMenuRef.current?.contains(event.target)
+			) {
+				setCategoryMenuOpen(false);
+			}
+		};
+		const closeOnEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") setCategoryMenuOpen(false);
+		};
+
+		document.addEventListener("pointerdown", closeOnOutsideClick);
+		document.addEventListener("keydown", closeOnEscape);
+		return () => {
+			document.removeEventListener("pointerdown", closeOnOutsideClick);
+			document.removeEventListener("keydown", closeOnEscape);
+		};
+	}, [categoryMenuOpen]);
+
 	const filteredProducts = catalogProducts.filter((product) => {
 		const search = productSearch.trim().toLowerCase();
 		const searchableText =
@@ -77,6 +134,10 @@ export default function HomePage() {
 
 		return (
 			(!search || searchableText.includes(search)) &&
+			(!selectedCategory ||
+				productCategories
+					.find((category) => category.label === selectedCategory)
+					?.keywords.some((keyword) => searchableText.includes(keyword))) &&
 			(!selectedBrand || product.brand === selectedBrand) &&
 			(!selectedLocation || product.location === selectedLocation) &&
 			(minimumPrice === "" || price >= Number(minimumPrice)) &&
@@ -136,6 +197,7 @@ export default function HomePage() {
 				</div>
 			</div>
 			{(productSearch ||
+				selectedCategory ||
 				selectedBrand ||
 				selectedLocation ||
 				minimumPrice ||
@@ -145,6 +207,7 @@ export default function HomePage() {
 					type="button"
 					onClick={() => {
 						setProductSearch("");
+						setSelectedCategory("");
 						setSelectedBrand("");
 						setSelectedLocation("");
 						setMinimumPrice("");
