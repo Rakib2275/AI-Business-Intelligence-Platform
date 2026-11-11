@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
 	ArrowRight,
 	ArrowUpRight,
 	BarChart3,
+	ChevronDown,
 	Database,
 	House,
 	LayoutDashboard,
 	LogOut,
+	Menu,
 	MessageSquareText,
 	PackagePlus,
 	Search,
 	ShoppingCart,
 	Sparkles,
+	Zap,
 } from "lucide-react";
 import { ApiError, apiRequest } from "@/lib/api";
 import { demoProducts } from "@/lib/demo-products";
@@ -39,6 +42,36 @@ const capabilities = [
 	},
 ];
 
+const categoryMenuItemStyle = {
+	display: "flex",
+	width: "100%",
+	alignItems: "center",
+	padding: "10px 12px",
+	border: 0,
+	borderRadius: 8,
+	color: "#344054",
+	background: "transparent",
+	font: "inherit",
+	fontSize: 14,
+	textAlign: "left",
+	cursor: "pointer",
+} satisfies React.CSSProperties;
+
+const productCategories = [
+	{
+		label: "Electronics",
+		keywords: ["headphone", "watch", "camera", "speaker", "audio", "gadget"],
+	},
+	{
+		label: "Fashion",
+		keywords: ["sneaker", "backpack", "sunglasses", "fashion", "apparel"],
+	},
+	{
+		label: "Home & Living",
+		keywords: ["lamp", "chair", "coffee maker", "home", "furniture", "kitchen"],
+	},
+];
+
 export default function HomePage() {
 	const [currentUser, setCurrentUser] = useState<User | null>(null);
 	const [sessionLoading, setSessionLoading] = useState(true);
@@ -49,7 +82,10 @@ export default function HomePage() {
 	const [minimumPrice, setMinimumPrice] = useState("");
 	const [maximumPrice, setMaximumPrice] = useState("");
 	const [selectedBrand, setSelectedBrand] = useState("");
+	const [selectedCategory, setSelectedCategory] = useState("");
 	const [selectedLocation, setSelectedLocation] = useState("");
+	const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+	const categoryMenuRef = useRef<HTMLDivElement>(null);
 	const [loggingOut, setLoggingOut] = useState(false);
 	const [logoutError, setLogoutError] = useState("");
 	const [cartProductIds, setCartProductIds] = useState<string[]>([]);
@@ -66,6 +102,29 @@ export default function HomePage() {
 		...new Set(catalogProducts.map((product) => product.location).filter(Boolean)),
 	].sort((first, second) => first.localeCompare(second));
 
+	useEffect(() => {
+		if (!categoryMenuOpen) return;
+
+		const closeOnOutsideClick = (event: PointerEvent) => {
+			if (
+				event.target instanceof Node &&
+				!categoryMenuRef.current?.contains(event.target)
+			) {
+				setCategoryMenuOpen(false);
+			}
+		};
+		const closeOnEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") setCategoryMenuOpen(false);
+		};
+
+		document.addEventListener("pointerdown", closeOnOutsideClick);
+		document.addEventListener("keydown", closeOnEscape);
+		return () => {
+			document.removeEventListener("pointerdown", closeOnOutsideClick);
+			document.removeEventListener("keydown", closeOnEscape);
+		};
+	}, [categoryMenuOpen]);
+
 	const filteredProducts = catalogProducts.filter((product) => {
 		const search = productSearch.trim().toLowerCase();
 		const searchableText =
@@ -74,6 +133,10 @@ export default function HomePage() {
 
 		return (
 			(!search || searchableText.includes(search)) &&
+			(!selectedCategory ||
+				productCategories
+					.find((category) => category.label === selectedCategory)
+					?.keywords.some((keyword) => searchableText.includes(keyword))) &&
 			(!selectedBrand || product.brand === selectedBrand) &&
 			(!selectedLocation || product.location === selectedLocation) &&
 			(minimumPrice === "" || price >= Number(minimumPrice)) &&
@@ -133,6 +196,7 @@ export default function HomePage() {
 				</div>
 			</div>
 			{(productSearch ||
+				selectedCategory ||
 				selectedBrand ||
 				selectedLocation ||
 				minimumPrice ||
@@ -142,6 +206,7 @@ export default function HomePage() {
 					type="button"
 					onClick={() => {
 						setProductSearch("");
+						setSelectedCategory("");
 						setSelectedBrand("");
 						setSelectedLocation("");
 						setMinimumPrice("");
@@ -468,6 +533,149 @@ export default function HomePage() {
 					</nav>
 				</header>
 			)}
+			{isCustomer && (
+				<nav className="customer-category-nav" aria-label="Product categories">
+					<div ref={categoryMenuRef} style={{ position: "relative", flex: "0 0 auto" }}>
+						<button
+							className={`customer-category-all ${selectedCategory || selectedBrand ? "" : "is-active"}`}
+							type="button"
+							aria-expanded={categoryMenuOpen}
+							aria-controls="customer-category-options"
+							onClick={() => setCategoryMenuOpen((open) => !open)}
+						>
+							<Menu size={17} aria-hidden="true" />
+							{selectedCategory || selectedBrand || "All Categories"}
+							<ChevronDown
+								size={15}
+								aria-hidden="true"
+								style={{
+									transform: categoryMenuOpen ? "rotate(180deg)" : undefined,
+									transition: "transform 160ms ease",
+								}}
+							/>
+						</button>
+						{categoryMenuOpen && (
+							<div
+								id="customer-category-options"
+								role="group"
+								aria-label="Choose a product category"
+								style={{
+									position: "absolute",
+									top: "calc(100% + 8px)",
+									left: 0,
+									zIndex: 30,
+									display: "grid",
+									gap: 4,
+									width: 220,
+									maxHeight: "min(60vh, 360px)",
+									overflowY: "auto",
+									padding: 8,
+									border: "1px solid #e6e9ed",
+									borderRadius: 12,
+									background: "#fff",
+									boxShadow: "0 12px 32px rgb(23 32 51 / 14%)",
+								}}
+							>
+								<button
+									type="button"
+									aria-pressed={!selectedCategory && !selectedBrand}
+									onClick={() => {
+										setProductSearch("");
+										setSelectedCategory("");
+										setSelectedBrand("");
+										setSelectedLocation("");
+										setMinimumPrice("");
+										setMaximumPrice("");
+										setCategoryMenuOpen(false);
+									}}
+									style={categoryMenuItemStyle}
+								>
+									All Categories
+								</button>
+								{productCategories.map((category) => (
+									<button
+										type="button"
+										key={category.label}
+										aria-pressed={selectedCategory === category.label}
+										onClick={() => {
+											setProductSearch("");
+											setSelectedCategory(category.label);
+											setSelectedBrand("");
+											setSelectedLocation("");
+											setMinimumPrice("");
+											setMaximumPrice("");
+											setCategoryMenuOpen(false);
+										}}
+										style={categoryMenuItemStyle}
+									>
+										{category.label}
+									</button>
+								))}
+								{brands.map((brand) => (
+									<button
+										type="button"
+										key={brand}
+										aria-pressed={selectedBrand === brand}
+										onClick={() => {
+											setProductSearch("");
+											setSelectedCategory("");
+											setSelectedBrand(brand);
+											setSelectedLocation("");
+											setMinimumPrice("");
+											setMaximumPrice("");
+											setCategoryMenuOpen(false);
+										}}
+										style={categoryMenuItemStyle}
+									>
+										{brand}
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+					<div className="customer-category-links">
+						{productCategories.map((category) => (
+							<button
+								className={selectedCategory === category.label ? "is-active" : ""}
+								type="button"
+								key={category.label}
+								aria-pressed={selectedCategory === category.label}
+								onClick={() => {
+									setProductSearch("");
+									setSelectedCategory(category.label);
+									setSelectedBrand("");
+									setSelectedLocation("");
+									setMinimumPrice("");
+									setMaximumPrice("");
+								}}
+							>
+								{category.label}
+							</button>
+						))}
+						{brands.map((brand) => (
+							<button
+								className={selectedBrand === brand ? "is-active" : ""}
+								type="button"
+								key={brand}
+								aria-pressed={selectedBrand === brand}
+								onClick={() => {
+									setProductSearch("");
+									setSelectedCategory("");
+									setSelectedBrand(brand);
+									setSelectedLocation("");
+									setMinimumPrice("");
+									setMaximumPrice("");
+								}}
+							>
+								{brand}
+							</button>
+						))}
+					</div>
+					<Link className="customer-category-dashboard" href="/dashboard">
+						Dashboard
+					</Link>
+				</nav>
+			)}
 
 			<main className={`public-dashboard ${isCustomer ? "public-storefront-dashboard" : ""}`}>
 				{!isCustomer && !sessionLoading && <section className="public-hero">
@@ -538,12 +746,6 @@ export default function HomePage() {
 				</section>}
 
 				<section className="public-products" aria-labelledby="public-products-title">
-					{isCustomer && (
-						<div className="customer-mobile-filters">
-							<strong>Filter products</strong>
-							{productFilters}
-						</div>
-					)}
 					<div className="public-section-heading">
 						<div>
 							{!isCustomer && (
