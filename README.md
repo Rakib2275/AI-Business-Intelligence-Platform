@@ -225,6 +225,12 @@ Start FastAPI:
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
+Another :
+
+``` bash
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+```
+
 ### 4. Open the AI Service
 
 -   API base URL: `http://127.0.0.1:8000`
