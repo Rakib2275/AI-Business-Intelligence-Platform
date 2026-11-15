@@ -2,9 +2,12 @@ export type User = {
 	id: string;
 	name: string;
 	email: string;
+	username?: string | null;
 	contactNumber?: string | null;
 	role: string;
 	imageUrl?: string | null;
+	passwordChangeRequired?: boolean;
+	businessProfile?: Record<string, unknown> | null;
 };
 
 export type Product = {

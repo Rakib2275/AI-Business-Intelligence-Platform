@@ -18,6 +18,7 @@ import {
 	Search,
 	ShieldCheck,
 	Sparkles,
+	UsersRound,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useSession } from "@/lib/session";
@@ -25,9 +26,12 @@ import { AccountMenu } from "@/components/account-menu";
 
 const navItems = [
 	{ label: "Home", href: "/", icon: House },
-	{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-	{ label: "Ask your data", href: "/conversations", icon: MessageSquareText },
-	{ label: "Dashboards", href: "/dashboards", icon: BarChart3 },
+	{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, admin: true },
+	{ label: "Seller dashboard", href: "/seller/dashboard", icon: LayoutDashboard, seller: true },
+	{ label: "Sales", href: "/seller/sales", icon: BarChart3, seller: true },
+	{ label: "Ask your data", href: "/conversations", icon: MessageSquareText, analysis: true },
+	{ label: "Dashboards", href: "/dashboards", icon: BarChart3, analysis: true },
+	{ label: "Seller management", href: "/admin/sellers", icon: UsersRound, admin: true },
 	{ label: "Add product", href: "/products/new", icon: PackagePlus, admin: true },
 	{ label: "Audit trail", href: "/audit", icon: ShieldCheck, admin: true },
 ];
@@ -39,17 +43,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	const [logoutError, setLogoutError] = useState("");
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+	const isSeller = user?.role === "SELLER";
+	const canAnalyze = isAdmin || isSeller;
 	const visibleItems = navItems.filter(
 		(item) =>
-			!item.admin || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN",
+			(!item.admin || isAdmin) &&
+			(!item.seller || isSeller) &&
+			(!item.analysis || canAnalyze),
 	);
-	const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 	const initial = user?.name.trim().charAt(0).toUpperCase() || "U";
 	const pageName =
 		pathname.startsWith("/profile-picture")
 			? "Profile picture"
 			: pathname === "/profile"
 				? "My profile"
+				: pathname.startsWith("/admin/sellers")
+					? "Seller management"
 				: (navItems.find(
 						(item) =>
 							pathname === item.href ||
@@ -114,16 +124,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				</nav>
 
 				<div className="sidebar-spacer" />
-				<div className="sidebar-tip">
-					<div className="tip-orbit">
-						<Bot size={17} />
+				{canAnalyze && (
+					<div className="sidebar-tip">
+						<div className="tip-orbit">
+							<Bot size={17} />
+						</div>
+						<strong>Your data, in context.</strong>
+						<p>Ask a follow-up. Noviq remembers what matters.</p>
+						<Link href="/conversations">
+							Start a conversation <ArrowUpRight size={13} />
+						</Link>
 					</div>
-					<strong>Your data, in context.</strong>
-					<p>Ask a follow-up. Noviq remembers what matters.</p>
-					<Link href="/conversations">
-						Start a conversation <ArrowUpRight size={13} />
-					</Link>
-				</div>
+				)}
 				<div className="sidebar-footer">
 					<Link className="sidebar-profile-link" href="/profile">
 						<span className="user-avatar">
@@ -208,13 +220,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 					onClick={() => setMobileOpen(false)}
 				/>
 			)}
-			<button
-				type="button"
-				className="floating-ask"
-				onClick={() => router.push("/conversations")}
-			>
-				<Sparkles size={17} /> Ask AI
-			</button>
+			{canAnalyze && (
+				<button
+					type="button"
+					className="floating-ask"
+					onClick={() => router.push("/conversations")}
+				>
+					<Sparkles size={17} /> Ask AI
+				</button>
+			)}
 		</div>
 	);
 }
