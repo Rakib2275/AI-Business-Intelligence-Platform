@@ -12,8 +12,13 @@ import {
 } from "lucide-react";
 import { ApiError, apiRequest } from "@/lib/api";
 
+type LoginResponse = {
+	user: { role: string };
+	passwordChangeRequired: boolean;
+};
+
 export default function LoginPage() {
-	const [email, setEmail] = useState("");
+	const [identifier, setIdentifier] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
 	const [busy, setBusy] = useState(false);
@@ -24,21 +29,30 @@ export default function LoginPage() {
 		setError("");
 		setBusy(true);
 		try {
-			await apiRequest("/auth/login", {
+			const login = await apiRequest<LoginResponse>("/auth/login", {
 				method: "POST",
-				body: { email, password },
+				body: {
+					...(identifier.includes("@")
+						? { email: identifier.trim() }
+						: { username: identifier.trim() }),
+					password,
+				},
 			});
-			const { data: user } = await apiRequest<{ role: string }>("/auth/me");
+			const { user, passwordChangeRequired } = login.data;
 			const nextPath = new URLSearchParams(window.location.search).get("next");
 			const isCheckoutPath =
 				nextPath !== null && /^\/checkout\/[a-zA-Z0-9_-]+$/.test(nextPath);
-			window.location.assign(
-				isCheckoutPath && user.role === "COUSTOMER"
-					? nextPath
+			const destination =
+				user.role === "SELLER"
+					? passwordChangeRequired
+						? "/seller/change-password"
+						: "/seller/dashboard"
 					: user.role === "COUSTOMER"
-						? "/"
-						: "/dashboard",
-			);
+						? isCheckoutPath
+							? nextPath
+							: "/"
+						: "/dashboard";
+			window.location.assign(destination);
 		} catch (caught) {
 			setError(
 				caught instanceof ApiError
@@ -129,16 +143,16 @@ export default function LoginPage() {
 						Pick up where your last good question left off.
 					</p>
 					<form className="login-form" onSubmit={onSubmit}>
-						<label htmlFor="email">Work email</label>
+						<label htmlFor="identifier">Email or username</label>
 						<div className="input-with-icon">
 							<Mail size={17} />
 							<input
-								id="email"
-								type="email"
+								id="identifier"
+								type="text"
 								autoComplete="username"
-								placeholder="you@company.com"
-								value={email}
-								onChange={(event) => setEmail(event.target.value)}
+								placeholder="you@company.com or username"
+								value={identifier}
+								onChange={(event) => setIdentifier(event.target.value)}
 								required
 							/>
 						</div>

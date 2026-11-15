@@ -34,10 +34,12 @@ export default function AddProductPage() {
 	const [success, setSuccess] = useState("");
 	const [saving, setSaving] = useState(false);
 	const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+	const isSeller = user?.role === "SELLER";
+	const backPath = isSeller ? "/seller/dashboard" : "/dashboard";
 
 	useEffect(() => {
-		if (!isAdmin) router.replace("/dashboard");
-	}, [isAdmin, router]);
+		if (!isAdmin && !isSeller) router.replace("/");
+	}, [isAdmin, isSeller, router]);
 
 	useEffect(() => {
 		if (!photo) {
@@ -88,10 +90,13 @@ export default function AddProductPage() {
 		formData.append("photo", photo);
 
 		try {
-			const response = await apiRequest<Product>("/products", {
+			const response = await apiRequest<Product>(
+				isSeller ? "/seller/products" : "/products",
+				{
 				method: "POST",
 				body: formData,
-			});
+				},
+			);
 			setSuccess(`${response.data.name} was added to the product catalog.`);
 		} catch (caught) {
 			setError(
@@ -117,16 +122,20 @@ export default function AddProductPage() {
 		if (fileInputRef.current) fileInputRef.current.value = "";
 	};
 
-	if (!isAdmin) return null;
+	if (!isAdmin && !isSeller) return null;
 
 	return (
 		<>
 			<PageHeading
-				eyebrow="PRODUCT CATALOG"
+				eyebrow={isSeller ? "YOUR PRODUCT CATALOG" : "PRODUCT CATALOG"}
 				title="Add a product"
-				description="Add a product and its photo to the public catalog."
+				description={
+					isSeller
+						? "Add a product to your catalog. It will be linked to your seller account."
+						: "Add a product and its photo to the public catalog."
+				}
 				action={
-					<Link className="button button-secondary" href="/dashboard">
+					<Link className="button button-secondary" href={backPath}>
 						<ArrowLeft size={15} /> Back to dashboard
 					</Link>
 				}
