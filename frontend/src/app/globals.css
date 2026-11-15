@@ -3931,7 +3931,9 @@ summary:focus-visible {
 		box-shadow: none;
 	}
 
-	.seller-password-screen {
+}
+
+.seller-password-screen {
 		display: grid;
 		min-height: 100vh;
 		place-items: center;
@@ -4324,9 +4326,198 @@ summary:focus-visible {
 		flex: 0 0 auto;
 	}
 
+	.seller-management .seller-create-panel,
+	.seller-management .seller-list-panel {
+		padding: 24px;
+		border-color: #e6e9ed;
+		border-radius: 14px;
+		box-shadow: 0 5px 18px rgb(31 41 55 / 3%);
+	}
+	.seller-management .seller-create-panel {
+		background:
+			radial-gradient(circle at 100% 0, rgb(232 247 239 / 55%), transparent 30%),
+			var(--surface);
+	}
+	.seller-create-heading {
+		align-items: center;
+		margin-bottom: 22px;
+	}
+	.seller-panel-heading-copy h2,
+	.seller-list-heading-copy h2 {
+		margin-top: 6px;
+		font-size: 17px;
+	}
+	.seller-panel-heading-copy p,
+	.seller-list-heading-copy p {
+		margin: 6px 0 0;
+		color: #828a98;
+		font-size: 11px;
+		line-height: 1.6;
+	}
+	.seller-secure-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 8px 11px;
+		border: 1px solid #dceee4;
+		border-radius: 999px;
+		color: #417b5e;
+		background: #f3fbf6;
+		font-size: 10px;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+	.seller-create-form .seller-form-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 17px 18px;
+	}
+	.seller-create-form .seller-form-grid label,
+	.seller-edit-form .seller-form-grid label {
+		gap: 8px;
+		color: #4c5667;
+		font-size: 11px;
+	}
+	.seller-create-form .seller-form-grid input,
+	.seller-edit-form .seller-form-grid input {
+		min-height: 43px;
+		padding: 10px 12px;
+		border-color: #dfe4e8;
+		border-radius: 9px;
+		font-size: 12px;
+		transition:
+			border-color 0.18s ease,
+			box-shadow 0.18s ease;
+	}
+	.seller-create-form .seller-form-grid input::placeholder,
+	.seller-create-password input::placeholder {
+		color: #a7afba;
+	}
+	.seller-create-form .seller-form-grid input:focus,
+	.seller-edit-form .seller-form-grid input:focus,
+	.seller-create-password input:focus {
+		border-color: #8eb6a0;
+		box-shadow: 0 0 0 3px rgb(91 142 111 / 10%);
+	}
+	.seller-create-password {
+		max-width: 560px;
+		margin-top: 21px;
+	}
+	.seller-create-password p {
+		margin: 0;
+		font-size: 10px;
+		line-height: 1.65;
+	}
+	.seller-form-actions {
+		justify-content: flex-start;
+		margin-top: 20px;
+		padding-top: 18px;
+		border-top: 1px solid #edf0f2;
+	}
+	.seller-create-form .seller-form-actions .button {
+		min-height: 41px;
+		padding: 0 16px;
+		font-size: 11px;
+	}
+	.seller-list-panel .panel-heading {
+		align-items: center;
+		margin-bottom: 18px;
+	}
+	.seller-count {
+		display: inline-flex;
+		width: auto;
+		align-items: center;
+		gap: 7px;
+		padding: 7px 10px;
+		border: 1px solid #e6e9f9;
+		border-radius: 999px;
+		color: #5969b6;
+		background: #f6f7ff;
+		font-size: 10px;
+		font-weight: 600;
+	}
+	.seller-table-scroll {
+		border: 1px solid #edf0f2;
+		border-radius: 10px;
+	}
+	.seller-table {
+		min-width: 820px;
+	}
+	.seller-table th {
+		padding: 13px 15px;
+		background: #fafbfc;
+		font-size: 9px;
+	}
+	.seller-table td {
+		padding: 14px 15px;
+		font-size: 11px;
+	}
+	.seller-table tbody tr {
+		transition: background 0.16s ease;
+	}
+	.seller-table tbody tr:hover {
+		background: #fbfcfb;
+	}
+	.seller-table-identity {
+		min-width: 210px;
+		gap: 11px;
+	}
+	.seller-table-avatar {
+		width: 36px;
+		height: 36px;
+		flex-basis: 36px;
+		border-radius: 11px;
+	}
+	.seller-table-identity strong {
+		color: #30394a;
+		font-size: 11px;
+	}
+	.seller-table-identity small {
+		font-size: 10px;
+	}
+	.seller-row-actions {
+		gap: 7px;
+	}
+	.seller-action-button {
+		min-height: 33px;
+		padding: 0 10px;
+		font-size: 10px;
+	}
+	.seller-empty-state {
+		display: grid;
+		min-height: 190px;
+		place-content: center;
+		justify-items: center;
+		gap: 8px;
+		padding: 28px;
+		text-align: center;
+	}
+	.seller-empty-icon {
+		display: grid;
+		width: 44px;
+		height: 44px;
+		margin-bottom: 3px;
+		place-items: center;
+		border: 1px solid #e3eee7;
+		border-radius: 14px;
+		color: #4f896c;
+		background: #f1f8f3;
+	}
+	.seller-empty-state strong {
+		color: #354052;
+		font-size: 12px;
+	}
+	.seller-empty-state p {
+		margin: 0;
+		color: #8a93a0;
+		font-size: 10px;
+	}
+
 	@media (max-width: 780px) {
 		.seller-dashboard-grid {
 			grid-template-columns: 1fr;
+		}
+		.seller-create-form .seller-form-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 		.seller-password-settings form,
 		.seller-email-verify-panel form {
@@ -4338,6 +4529,21 @@ summary:focus-visible {
 	@media (max-width: 600px) {
 		.seller-password-card {
 			padding: 24px;
+		}
+		.seller-management .seller-create-panel,
+		.seller-management .seller-list-panel {
+			padding: 17px;
+		}
+		.seller-create-heading {
+			align-items: flex-start;
+			gap: 12px;
+		}
+		.seller-secure-badge {
+			padding: 7px 8px;
+			font-size: 9px;
+		}
+		.seller-create-form .seller-form-grid {
+			grid-template-columns: 1fr;
 		}
 		.seller-form-grid {
 			grid-template-columns: 1fr;
@@ -4351,10 +4557,15 @@ summary:focus-visible {
 		.seller-row-actions {
 			flex-direction: column;
 		}
+		.seller-action-button {
+			justify-content: center;
+		}
 		.seller-revenue-card .stat-value {
 			font-size: 20px;
 		}
 	}
+
+@media (max-width: 680px) {
 	.sidebar-open {
 		transform: translateX(0);
 		box-shadow: 15px 0 36px rgb(19 27 39 / 20%);
