@@ -16,6 +16,8 @@ import { paymentRoute } from "./app/module/payment/payment.route.js";
 import { queryRoute } from "./app/module/query/query.route.js";
 import { reportRoute } from "./app/module/report/report.route.js";
 import { UserRoutes } from "./app/module/user/user.route.js";
+import { adminSellerRoute } from "./app/module/seller/adminSeller.route.js";
+import { sellerRoute } from "./app/module/seller/seller.route.js";
 
 const app: Application = express();
 
@@ -35,6 +37,8 @@ app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/user", UserRoutes);
+app.use("/api/v1/admin/sellers", adminSellerRoute);
+app.use("/api/v1/seller", sellerRoute);
 app.use("/api/v1/business-data", businessDataRoute);
 app.use("/business-data", businessDataRoute);
 app.use("/api/v1/query", queryRoute);

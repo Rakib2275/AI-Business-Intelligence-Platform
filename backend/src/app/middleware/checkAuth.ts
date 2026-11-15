@@ -43,7 +43,7 @@ export const auth = (...requiredRoles: Role[]) => {
 			throw new AppError("Invalid or expired access token.", 401);
 		}
 
-		const { email, name, userId, role } = verifiedToken.data as JwtPayload;
+		const { userId, role } = verifiedToken.data as JwtPayload;
 
 		if (requiredRoles.length && !requiredRoles.includes(role)) {
 			throw new AppError(
@@ -55,13 +55,10 @@ export const auth = (...requiredRoles: Role[]) => {
 		const user = await prisma.user.findUnique({
 			where: {
 				id: userId,
-				email,
-				name,
-				role,
 			},
 		});
 
-		if (!user) {
+		if (!user || user.role !== role) {
 			throw new AppError("User not found. Please log in again.", 401);
 		}
 
@@ -69,11 +66,19 @@ export const auth = (...requiredRoles: Role[]) => {
 			throw new AppError("Your account is inactive. Please contact support.", 403);
 		}
 
+		const isInitialPasswordChange =
+			req.method === "PATCH" &&
+			req.baseUrl.endsWith("/seller") &&
+			req.path === "/change-password";
+		if (user.passwordChangeRequired && !isInitialPasswordChange) {
+			throw new AppError("Change your initial password before continuing.", 403);
+		}
+
 		req.user = {
-			email,
-			name,
+			email: user.email,
+			name: user.name,
 			userId,
-			role,
+			role: user.role,
 		};
 
 		next();

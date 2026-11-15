@@ -28,6 +28,7 @@ const createProduct = async (
 	payload: unknown,
 	photo: Buffer,
 	context: AuditRequestContext = {},
+	sellerId?: string,
 ) => {
 	const productData = createProductSchema.parse(payload);
 	const uploadedPhoto = await uploadProductPhoto(photo);
@@ -35,6 +36,7 @@ const createProduct = async (
 	const product = await prisma.product.create({
 		data: {
 			...productData,
+			sellerId,
 			imageUrl: uploadedPhoto.secure_url,
 			imagePublicId: uploadedPhoto.public_id,
 		},
@@ -64,6 +66,23 @@ const createProduct = async (
 
 	return product;
 };
+
+const getSellerProducts = async (sellerId: string) =>
+	prisma.product.findMany({
+		where: { sellerId },
+		orderBy: { createdAt: "desc" },
+		select: {
+			id: true,
+			name: true,
+			title: true,
+			description: true,
+			brand: true,
+			location: true,
+			price: true,
+			imageUrl: true,
+			createdAt: true,
+		},
+	});
 
 const getPublicProducts = async () => {
 	return prisma.product.findMany({
@@ -108,5 +127,6 @@ const requirePhoto = (photo: Express.Multer.File | undefined) => {
 export const productService = {
 	createProduct,
 	getPublicProducts,
+	getSellerProducts,
 	requirePhoto,
 };

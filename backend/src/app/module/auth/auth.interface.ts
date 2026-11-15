@@ -1,7 +1,8 @@
 import type { Role } from "../../../generated/prisma/browser.js";
 
 export interface ILoginUserPayload {
-	email: string;
+	email?: string;
+	username?: string;
 	password: string;
 }
 
