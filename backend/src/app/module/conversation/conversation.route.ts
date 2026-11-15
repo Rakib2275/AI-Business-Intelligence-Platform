@@ -1,10 +1,11 @@
 import { Router } from "express";
+import { Role } from "../../../generated/prisma/enums.js";
 import { auth } from "../../middleware/checkAuth.js";
 import { conversationController } from "./conversation.controller.js";
 
 const router = Router();
 
-router.use(auth());
+router.use(auth(Role.ADMIN, Role.SUPER_ADMIN, Role.SELLER));
 router.post("/", conversationController.create);
 router.get("/", conversationController.list);
 router.get("/:id/messages", conversationController.listMessages);
