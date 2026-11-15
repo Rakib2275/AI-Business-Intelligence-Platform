@@ -5,7 +5,7 @@ import { auth } from "../../middleware/checkAuth.js";
 import { productController } from "./product.controller.js";
 
 const router = Router();
-const productPhotoUpload = multer({
+export const productPhotoUpload = multer({
 	storage: multer.memoryStorage(),
 	limits: {
 		fileSize: 10 * 1024 * 1024,

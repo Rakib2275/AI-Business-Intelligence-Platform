@@ -2,8 +2,11 @@ model User {
   id           String     @id @default(uuid())
   name         String
   email        String     @unique
+  username     String?    @unique
 	contactNumber String?
   passwordHash String
+  passwordChangeRequired Boolean @default(false)
+  businessProfile Json?
   imageUrl     String     @default("")
   imagePublicId String    @default("")
   role         Role   @default(COUSTOMER)
@@ -20,6 +23,7 @@ model User {
   notifications Notification[]
   usageRecords  UsageRecord[]
   productOrders ProductOrder[]
+  products      Product[] @relation("SellerProducts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

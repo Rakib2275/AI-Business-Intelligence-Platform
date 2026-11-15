@@ -85,7 +85,7 @@ const verifyuserEmail = catchAsync(async (req: Request, res: Response) => {
 const loginUser = catchAsync(async (req: Request, res: Response) => {
 	const payload = req.body;
 	const result = await AuthService.loginUser(payload, getAuditRequestContext(req));
-	const { accessToken, refreshToken } = result;
+	const { accessToken, refreshToken, passwordChangeRequired, user } = result;
 
 	res.cookie("accessToken", accessToken, {
 		...authCookieOptions,
@@ -103,6 +103,8 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 		data: {
 			accessToken,
 			refreshToken,
+			passwordChangeRequired,
+			user,
 		},
 	});
 });

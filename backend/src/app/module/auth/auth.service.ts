@@ -233,10 +233,15 @@ const loginUser = async (
 	context: AuditRequestContext = {},
 ) => {
 	const { password } = payload;
-	const email = payload.email.trim().toLowerCase();
+	const identifier = payload.email
+		? payload.email.trim().toLowerCase()
+		: payload.username?.trim().toLowerCase();
+	if (!identifier) {
+		throw new AppError("Provide your email or username and password.", 400);
+	}
 
-	const user = await prisma.user.findUnique({
-		where: { email },
+	const user = await prisma.user.findFirst({
+		where: payload.email ? { email: identifier } : { username: identifier },
 	});
 
 	if (!user) {
@@ -321,6 +326,14 @@ const loginUser = async (
 	return {
 		accessToken,
 		refreshToken,
+		passwordChangeRequired: user.passwordChangeRequired,
+		user: {
+			id: user.id,
+			name: user.name,
+			username: user.username,
+			email: user.email,
+			role: user.role,
+		},
 	};
 };
 
@@ -336,6 +349,9 @@ const getMe = async (user: IRequestUser) => {
 			contactNumber: true,
 			role: true,
 			imageUrl: true,
+			username: true,
+			businessProfile: true,
+			passwordChangeRequired: true,
 			status: true,
 			createdAt: true,
 			updatedAt: true,

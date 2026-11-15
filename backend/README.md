@@ -135,6 +135,36 @@ operations are recorded.
 Product photos are stored in Cloudinary. Newly created products are immediately
 available in the homepage catalog.
 
+### Seller accounts
+
+* `POST /admin/sellers` — create a seller (ADMIN/SUPER_ADMIN); provide `name`,
+  `username`, `initialPassword`, `email`, and optional `businessProfile` and
+  `contactNumber`
+* `GET /admin/sellers` and `GET /admin/sellers/:id` — list or view sellers
+* `PATCH /admin/sellers/:id` — update seller details or set `status` to
+  `ACTIVE`/`BLOCKED`
+* `DELETE /admin/sellers/:id` — deactivate a seller by blocking sign-in
+* `GET /seller/profile` and `PATCH /seller/profile` — view or update the
+  signed-in seller's name, username, contact number, or business profile
+* `POST /seller/profile/verify-email` — verify an email change requested through
+  the profile endpoint using the emailed `email` and six-digit `otp`
+* `PATCH /seller/change-password` — change the current password; seller
+  accounts created by an admin must do this before accessing other seller APIs
+* `PATCH /seller/profile-image` — upload a `profileImage` file
+* `GET /seller/products`, `POST /seller/products` — list or add only the
+  signed-in seller's products; product creation uses the same fields and photo
+  upload as the admin product endpoint
+* `GET /seller/dashboard` and `GET /seller/sales` — retrieve the seller's
+  product count, paid-sales revenue, recent sales, own sales history, and
+  recent AI query insights
+
+Seller products and sales are scoped to the authenticated seller on the backend.
+Seller analytics continue to use the signed-in user's owned business datasets.
+`POST /auth/login` returns the authenticated user's `role` and
+`passwordChangeRequired` flag so the client can direct sellers to the seller
+dashboard (or initial password change) after sign-in.
+Apply the `20261115114800_seller_accounts` migration before using these APIs.
+
 ### Product checkout
 
 * `POST /payments/products/:productId/checkout` — start a bKash checkout for the
