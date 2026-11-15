@@ -5,8 +5,9 @@ import {
 	Building2,
 	Check,
 	Pencil,
-	Plus,
 	ShieldCheck,
+	Store,
+	UsersRound,
 	UserRound,
 	X,
 } from "lucide-react";
@@ -211,9 +212,11 @@ export default function SellerManagementPage() {
 				<span>Seller name</span>
 				<input
 					value={draft.name}
+					placeholder="e.g. Ayesha Rahman"
 					onChange={(event) => setDraft({ ...draft, name: event.target.value })}
 					minLength={2}
 					maxLength={80}
+					autoComplete="name"
 					required
 				/>
 			</label>
@@ -221,12 +224,13 @@ export default function SellerManagementPage() {
 				<span>Username</span>
 				<input
 					value={draft.username}
+					placeholder="e.g. ayesha-store"
 					onChange={(event) =>
 						setDraft({ ...draft, username: event.target.value })
 					}
 					minLength={3}
 					maxLength={30}
-					autoComplete="off"
+					autoComplete="username"
 					required
 				/>
 			</label>
@@ -235,7 +239,9 @@ export default function SellerManagementPage() {
 				<input
 					type="email"
 					value={draft.email}
+					placeholder="seller@company.com"
 					onChange={(event) => setDraft({ ...draft, email: event.target.value })}
+					autoComplete="email"
 					required
 				/>
 			</label>
@@ -244,16 +250,19 @@ export default function SellerManagementPage() {
 				<input
 					type="tel"
 					value={draft.contactNumber}
+					placeholder="+880 1XXX-XXXXXX"
 					onChange={(event) =>
 						setDraft({ ...draft, contactNumber: event.target.value })
 					}
 					maxLength={30}
+					autoComplete="tel"
 				/>
 			</label>
 			<label>
 				<span>Business name</span>
 				<input
 					value={draft.companyName}
+					placeholder="Company or store name"
 					onChange={(event) =>
 						setDraft({ ...draft, companyName: event.target.value })
 					}
@@ -263,6 +272,7 @@ export default function SellerManagementPage() {
 				<span>Business type</span>
 				<input
 					value={draft.businessType}
+					placeholder="e.g. Retail, Fashion"
 					onChange={(event) =>
 						setDraft({ ...draft, businessType: event.target.value })
 					}
@@ -281,31 +291,37 @@ export default function SellerManagementPage() {
 	);
 
 	return (
-		<>
+		<div className="seller-management">
 			<PageHeading
 				eyebrow="ADMINISTRATION"
 				title="Seller management"
-				description="Create and manage seller accounts. Sellers sign in with the username and initial password you provide."
+				description="Onboard sellers, maintain their business details, and manage account access."
 			/>
 
-			{error && <ErrorNotice message={error} onRetry={() => void loadSellers()} />}
+			{error && (
+				<ErrorNotice message={error} onRetry={() => void loadSellers()} />
+			)}
 			{notice && (
-				<div className="profile-picture-message profile-picture-success" role="status">
+				<div
+					className="profile-picture-message profile-picture-success"
+					role="status"
+				>
 					<Check size={15} /> {notice}
 				</div>
 			)}
 
 			<section className="panel seller-create-panel">
-				<div className="panel-heading">
-					<div>
+				<div className="panel-heading seller-create-heading">
+					<div className="seller-panel-heading-copy">
 						<div className="eyebrow">NEW ACCOUNT</div>
-						<h2>Create seller</h2>
+						<h2>Create a seller account</h2>
+						<p>Add account credentials and business information for a new seller.</p>
 					</div>
-					<span className="seller-panel-icon">
-						<Plus size={17} />
+					<span className="seller-secure-badge">
+						<ShieldCheck size={15} /> Admin managed
 					</span>
 				</div>
-				<form onSubmit={handleCreate}>
+				<form className="seller-create-form" onSubmit={handleCreate}>
 					{renderFields(createDraft, setCreateDraft)}
 					<div className="seller-create-password">
 						<label>
@@ -313,6 +329,7 @@ export default function SellerManagementPage() {
 							<input
 								type="password"
 								autoComplete="new-password"
+								placeholder="Choose a temporary password"
 								minLength={8}
 								maxLength={20}
 								value={initialPassword}
@@ -322,12 +339,18 @@ export default function SellerManagementPage() {
 						</label>
 						<p>
 							Use 8–20 characters with uppercase, lowercase, a number, and a
-							special character. Seller must change it after the first sign-in.
+							special character. The seller will be asked to change it after
+							their first sign-in.
 						</p>
 					</div>
 					<div className="seller-form-actions">
-						<button className="button button-primary" type="submit" disabled={busy}>
-							<UserRound size={15} /> {busy ? "Creating…" : "Create seller account"}
+						<button
+							className="button button-primary"
+							type="submit"
+							disabled={busy}
+						>
+							<UserRound size={15} />
+							{busy ? "Creating…" : "Create seller account"}
 						</button>
 					</div>
 				</form>
@@ -335,11 +358,15 @@ export default function SellerManagementPage() {
 
 			<section className="panel seller-list-panel">
 				<div className="panel-heading">
-					<div>
+					<div className="seller-list-heading-copy">
 						<div className="eyebrow">SELLER ACCOUNTS</div>
 						<h2>All sellers</h2>
+						<p>Review seller profiles and account status.</p>
 					</div>
-					<span className="seller-count">{sellers.length}</span>
+					<span className="seller-count">
+						<UsersRound size={15} />
+						{sellers.length} {sellers.length === 1 ? "seller" : "sellers"}
+					</span>
 				</div>
 				{loading ? (
 					<LoadingBlock label="Loading seller accounts" />
@@ -391,6 +418,7 @@ export default function SellerManagementPage() {
 													<button
 														className="button button-secondary seller-action-button"
 														type="button"
+														aria-label={`Edit ${seller.name}`}
 														disabled={busy}
 														onClick={() => startEditing(seller)}
 													>
@@ -399,6 +427,7 @@ export default function SellerManagementPage() {
 													<button
 														className={`button ${seller.status === "ACTIVE" ? "button-danger" : "button-secondary"} seller-action-button`}
 														type="button"
+														aria-label={`${seller.status === "ACTIVE" ? "Deactivate" : "Reactivate"} ${seller.name}`}
 														disabled={busy}
 														onClick={() => void setSellerStatus(seller)}
 													>
@@ -421,7 +450,13 @@ export default function SellerManagementPage() {
 						</table>
 					</div>
 				) : (
-					<div className="panel-blank">No seller accounts have been created.</div>
+					<div className="panel-blank seller-empty-state">
+						<span className="seller-empty-icon">
+							<Store size={21} />
+						</span>
+						<strong>No seller accounts yet</strong>
+						<p>Create your first seller account using the form above.</p>
+					</div>
 				)}
 			</section>
 
@@ -448,6 +483,6 @@ export default function SellerManagementPage() {
 					</form>
 				</Modal>
 			)}
-		</>
+		</div>
 	);
 }
