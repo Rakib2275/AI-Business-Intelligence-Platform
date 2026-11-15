@@ -1,3 +1,537 @@
+model AuditLog {
+  id     String  @id @default(uuid())
+  userId String?
+
+  action       String
+  category     AuditCategory?
+  resource     String?
+  resourceType String?
+  resourceId   String?
+  description  String?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  status       AuditStatus    @default(SUCCESS)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([category])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+}
+
+model AIAgent {
+  id          String @id @default(uuid())
+  workspaceId String
+  modelId     String
+
+  name         String
+  description  String?
+  systemPrompt String?
+  temperature  Float       @default(0.7)
+  status       AgentStatus @default(ACTIVE)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  model     AIModel   @relation(fields: [modelId], references: [id])
+
+  usageRecords UsageRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([modelId])
+}
+
+model AIModel {
+  id          String  @id @default(uuid())
+  provider    String
+  name        String
+  modelId     String
+  inputPrice  Float?
+  outputPrice Float?
+  isActive    Boolean @default(true)
+
+  agents       AIAgent[]
+  usageRecords UsageRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, modelId])
+}
+
+model BusinessData {
+  id          String  @id @default(uuid())
+  userId      String
+  name        String
+  tableName   String
+  description String?
+  fileName    String?
+
+  // Uploaded/Imported business data
+  data Json
+
+  rowCount    Int?
+  columnCount Int?
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metadata TablesMetadata[]
+  queries  QueryHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([tableName])
+}
+
+model Conversation {
+  id     String @id @default(uuid())
+  userId String
+
+  title  String?
+  status ConversationStatus @default(ACTIVE)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model Dashboard {
+  id          String  @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  isDefault   Boolean @default(false)
+  layout      Json?
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  widgets DashboardWidget[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model DashboardWidget {
+  id            String              @id @default(uuid())
+  dashboardId   String
+  queryId       String?
+  title         String
+  type          DashboardWidgetType
+  position      Int                 @default(0)
+  configuration Json?
+
+  dashboard Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  query     QueryHistory? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dashboardId, position])
+  @@index([queryId])
+}
+
+model Document {
+  id          String @id @default(uuid())
+  workspaceId String
+  uploadedBy  String
+
+  name     String
+  fileUrl  String
+  mimeType String?
+  size     Int?
+  status   DocumentStatus @default(PROCESSING)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [uploadedBy], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([uploadedBy])
+}
+
+model Embedding {
+  id         String @id @default(uuid())
+  metadataId String
+
+  text      String
+  embedding Json
+  metadata  Json?
+
+  tableMetadata TablesMetadata @relation(fields: [metadataId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([metadataId])
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  COUSTOMER
+  SELLER
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AuthProvider {
+  GOOGLE
+  CREDENTIALS
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  ONGOING
+  COMPLETED
+}
+
+enum PamentStatus {
+  UNPAID
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum AgentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MessageRole {
+  SYSTEM
+  USER
+  ASSISTANT
+}
+
+enum MessageType {
+  TEXT
+  SQL
+  QUERY_RESULT
+  CHART
+  INSIGHT
+  ERROR
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AuditCategory {
+  AUTH
+  USER
+  DATA
+  QUERY
+  AI
+  CONVERSATION
+  DASHBOARD
+  REPORT
+  SYSTEM
+}
+
+enum AuditStatus {
+  SUCCESS
+  FAILURE
+  REJECTED
+}
+
+enum DashboardWidgetType {
+  KPI
+  TABLE
+  BAR_CHART
+  LINE_CHART
+  PIE_CHART
+  AREA_CHART
+  SCATTER
+  METRIC
+  TEXT
+  INSIGHT
+}
+
+enum DocumentStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+  TRIALING
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum ReportStatus {
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+enum QueryStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  BLOCKED
+}
+
+model Membership {
+  id             String @id @default(uuid())
+  userId         String
+  organizationId String
+
+  role MembershipRole @default(MEMBER)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Message {
+  id             String  @id @default(uuid())
+  conversationId String
+  queryId        String?
+
+  role        MessageRole
+  messageType MessageType @default(TEXT)
+  content     String
+  metadata    Json?
+
+  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  query        QueryHistory? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([queryId])
+}
+
+model Notification {
+  id     String @id @default(uuid())
+  userId String
+
+  title   String
+  message String
+  type    NotificationType @default(INFO)
+  isRead  Boolean          @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Organization {
+  id     String             @id @default(uuid())
+  name   String
+  slug   String             @unique
+  logo   String?
+  status OrganizationStatus @default(ACTIVE)
+
+  memberships   Membership[]
+  workspaces    Workspace[]
+  subscriptions Subscription[]
+  //   apiKeys       APIKey[]
+  usageRecords  UsageRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model Payment {
+  id String @id @default(uuid())
+
+  status PamentStatus @default(UNPAID)
+
+  amount   Decimal @db.Decimal(10, 2) // 100.50
+  currency String  @default("BDT")
+
+  paymentGateway        String @default("bkash")
+  merchantInvoiceNumber String @unique // appointment id
+
+  bkashPaymentId String? @unique
+  bkashTrxId     String?
+  payerReference String? // user email / phone number
+  paidAt         String?
+
+  gatewayResponse Json?
+
+  refundTrxId  String?
+  refundAmount Decimal? @db.Decimal(10, 2)
+  refundReason String?
+  refundedAt   String?
+
+  appointmentId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payments")
+}
+
+model Plan {
+  id String @id @default(uuid())
+
+  name        String
+  description String?
+  price       Float
+  //   billingCycle BillingCycle
+
+  maxUsers     Int
+  maxAgents    Int
+  maxDocuments Int
+  maxTokens    Int
+
+  isActive Boolean @default(true)
+
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id            String  @id @default(uuid())
+  name          String
+  title         String
+  description   String
+  brand         String
+  location      String
+  price         Decimal @db.Decimal(12, 2)
+  imageUrl      String
+  imagePublicId String
+  sellerId      String?
+
+  orders    ProductOrder[]
+  seller    User?          @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: SetNull)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([createdAt])
+  @@index([sellerId, createdAt])
+}
+
+model ProductOrder {
+  id                    String       @id @default(uuid())
+  userId                String
+  productId             String
+  amount                Decimal      @db.Decimal(12, 2)
+  currency              String       @default("BDT")
+  status                PamentStatus @default(UNPAID)
+  merchantInvoiceNumber String       @unique
+  bkashPaymentId        String?      @unique
+  bkashTrxId            String?
+  paidAt                DateTime?
+  gatewayResponse       Json?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([productId])
+}
+
+model QueryHistory {
+  id             String  @id @default(uuid())
+  userId         String
+  businessDataId String?
+
+  question      String
+  generatedSql  String?
+  resultSummary String?
+
+  executionTime Int?
+  status        QueryStatus @default(PENDING)
+
+  errorMessage String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  businessData     BusinessData?     @relation(fields: [businessDataId], references: [id], onDelete: SetNull)
+  messages         Message[]
+  dashboardWidgets DashboardWidget[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([businessDataId])
+  @@index([createdAt])
+}
+
+model Report {
+  id     String @id @default(uuid())
+  userId String
+
+  title    String
+  filePath String?
+  summary  String?
+
+  status ReportStatus @default(GENERATING)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
 generator client {
   provider = "prisma-client"
   output   = "../../src/generated/prisma"
@@ -5,4 +539,123 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model Subscription {
+  id             String @id @default(uuid())
+  organizationId String
+  planId         String
+
+  status SubscriptionStatus @default(TRIALING)
+
+  startDate DateTime
+  endDate   DateTime?
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([planId])
+}
+
+model TablesMetadata {
+  id             String @id @default(uuid())
+  businessDataId String
+
+  tableName   String
+  description String?
+  columns     Json
+
+  businessData BusinessData @relation(fields: [businessDataId], references: [id], onDelete: Cascade)
+
+  embeddings Embedding[]
+
+  createdAt DateTime @default(now())
+
+  @@index([businessDataId])
+}
+
+model UsageRecord {
+  id             String  @id @default(uuid())
+  organizationId String
+  workspaceId    String?
+  agentId        String?
+  modelId        String?
+  userId         String?
+
+  inputTokens  Int @default(0)
+  outputTokens Int @default(0)
+  totalTokens  Int @default(0)
+
+  cost Float @default(0)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspace    Workspace?   @relation(fields: [workspaceId], references: [id])
+  agent        AIAgent?     @relation(fields: [agentId], references: [id])
+  model        AIModel?     @relation(fields: [modelId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([workspaceId])
+  @@index([agentId])
+  @@index([createdAt])
+}
+
+model User {
+  id                     String     @id @default(uuid())
+  name                   String
+  email                  String     @unique
+  username               String?    @unique
+  contactNumber          String?
+  passwordHash           String
+  passwordChangeRequired Boolean    @default(false)
+  businessProfile        Json?
+  imageUrl               String     @default("")
+  imagePublicId          String     @default("")
+  role                   Role       @default(COUSTOMER)
+  status                 UserStatus @default(ACTIVE)
+
+  queryHistory  QueryHistory[]
+  reports       Report[]
+  conversations Conversation[]
+  dashboards    Dashboard[]
+  memberships   Membership[]
+  documents     Document[]
+  businessData  BusinessData[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  usageRecords  UsageRecord[]
+  productOrders ProductOrder[]
+  products      Product[]      @relation("SellerProducts")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+model Workspace {
+  id             String  @id @default(uuid())
+  name           String
+  description    String?
+  organizationId String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  agents       AIAgent[]
+  documents    Document[]
+  usageRecords UsageRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
