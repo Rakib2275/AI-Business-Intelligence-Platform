@@ -24,6 +24,11 @@ An AI-powered BI platform that allows non-technical users to analyze business da
 * Authentication and role-based access
 * Query history and audit logs
 
+Business-data, query, conversation, dashboard, analytics, and report APIs are
+restricted to `ADMIN`, `SUPER_ADMIN`, and `SELLER` accounts. Customer accounts
+can use customer-facing profile and product checkout APIs but cannot access
+business analysis or AI insight endpoints.
+
 ## Workflow
 
 ```text

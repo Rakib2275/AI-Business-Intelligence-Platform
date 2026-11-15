@@ -1,10 +1,11 @@
 import { Router } from "express";
+import { Role } from "../../../generated/prisma/enums.js";
 import { auth } from "../../middleware/checkAuth.js";
 import { dashboardController } from "./dashboard.controller.js";
 
 const router = Router();
 
-router.use(auth());
+router.use(auth(Role.ADMIN, Role.SUPER_ADMIN, Role.SELLER));
 router.post("/", dashboardController.create);
 router.get("/", dashboardController.list);
 router.patch("/:id/widgets/reorder", dashboardController.reorderWidgets);
