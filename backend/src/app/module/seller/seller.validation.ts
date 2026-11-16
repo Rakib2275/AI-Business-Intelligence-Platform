@@ -67,6 +67,10 @@ export const verifySellerEmailSchema = z.object({
 	otp: z.string().length(6),
 });
 
+export const verifyInitialSellerEmailSchema = z.object({
+	otp: z.string().regex(/^\d{6}$/),
+});
+
 export const changeSellerPasswordSchema = z.object({
 	currentPassword: z.string().min(1),
 	newPassword: passwordSchema,

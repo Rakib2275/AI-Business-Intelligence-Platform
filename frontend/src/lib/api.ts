@@ -60,10 +60,16 @@ export async function apiRequest<T>(
 	const payload: unknown = await response.json().catch(() => null);
 	if (!response.ok) {
 		const envelope = payload as { message?: unknown } | null;
-		throw new ApiError(
+		const message =
 			typeof envelope?.message === "string"
 				? envelope.message
-				: `The request failed (${response.status}).`,
+				: `The request failed (${response.status}).`;
+		const requestDetails =
+			message === "You have provided incorrect field type or missing fields"
+				? ` (${options.method?.toUpperCase() ?? "GET"} ${path})`
+				: "";
+		throw new ApiError(
+			`${message}${requestDetails}`,
 			response.status,
 		);
 	}

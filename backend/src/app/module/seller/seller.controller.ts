@@ -124,6 +124,35 @@ const verifyEmailChange = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const requestInitialEmailVerification = catchAsync(
+	async (req: Request, res: Response) => {
+		await sellerService.requestInitialEmailVerification(
+			requireUserId(req),
+			getAuditRequestContext(req),
+		);
+		sendResponse(res, {
+			statusCode: httpStatus.OK,
+			success: true,
+			message: "Verification code sent to your seller account email.",
+			data: null,
+		});
+	},
+);
+
+const verifyInitialEmail = catchAsync(async (req: Request, res: Response) => {
+	await sellerService.verifyInitialEmail(
+		requireUserId(req),
+		req.body,
+		getAuditRequestContext(req),
+	);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Seller email verified successfully.",
+		data: null,
+	});
+});
+
 const changePassword = catchAsync(async (req: Request, res: Response) => {
 	await sellerService.changePassword(
 		requireUserId(req),
@@ -167,6 +196,8 @@ export const sellerController = {
 	getProfile,
 	updateProfile,
 	verifyEmailChange,
+	requestInitialEmailVerification,
+	verifyInitialEmail,
 	changePassword,
 	getDashboard,
 	getSales,

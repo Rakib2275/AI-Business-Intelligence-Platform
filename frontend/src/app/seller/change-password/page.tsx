@@ -40,6 +40,25 @@ export default function SellerChangePasswordPage() {
 		}
 	};
 
+	const handleSkip = async () => {
+		setError("");
+		setBusy(true);
+		try {
+			await apiRequest("/seller/initial-email-verification/request", {
+				method: "POST",
+			});
+			router.replace("/seller/verify-email");
+		} catch (caught) {
+			setError(
+				caught instanceof ApiError
+					? caught.message
+					: "Email verification could not be started.",
+			);
+		} finally {
+			setBusy(false);
+		}
+	};
+
 	return (
 		<main className="seller-password-screen">
 			<section className="seller-password-card">
@@ -58,7 +77,7 @@ export default function SellerChangePasswordPage() {
 				<h1>Set a new password</h1>
 				<p>
 					Your administrator created this account. Change the initial password
-					to continue to your seller dashboard.
+					to continue, or skip this step and verify your email.
 				</p>
 				<form className="seller-password-form" onSubmit={handleSubmit}>
 					<label htmlFor="current-password">Initial password</label>
@@ -110,6 +129,14 @@ export default function SellerChangePasswordPage() {
 						{!busy && <ArrowRight size={17} />}
 					</button>
 				</form>
+				<button
+					className="button button-quiet login-submit seller-password-skip"
+					type="button"
+					disabled={busy}
+					onClick={() => void handleSkip()}
+				>
+					Skip and verify email <ArrowRight size={17} />
+				</button>
 			</section>
 		</main>
 	);

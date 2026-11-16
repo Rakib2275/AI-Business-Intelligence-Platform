@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { LoginZodSchema } from "../auth/authValidation.js";
 import {
 	createSellerSchema,
+	verifyInitialSellerEmailSchema,
 	updateSellerProfileSchema,
 	verifySellerEmailSchema,
 } from "./seller.validation.js";
@@ -50,6 +51,21 @@ describe("seller account validation", () => {
 				email: "seller@example.com",
 				otp: "12345",
 			}).success,
+			false,
+		);
+	});
+
+	it("requires a six-digit code for initial seller email verification", () => {
+		assert.equal(
+			verifyInitialSellerEmailSchema.safeParse({ otp: "123456" }).success,
+			true,
+		);
+		assert.equal(
+			verifyInitialSellerEmailSchema.safeParse({ otp: "12345" }).success,
+			false,
+		);
+		assert.equal(
+			verifyInitialSellerEmailSchema.safeParse({ otp: "abcdef" }).success,
 			false,
 		);
 	});

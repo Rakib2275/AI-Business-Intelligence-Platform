@@ -70,7 +70,19 @@ export const auth = (...requiredRoles: Role[]) => {
 			req.method === "PATCH" &&
 			req.baseUrl.endsWith("/seller") &&
 			req.path === "/change-password";
-		if (user.passwordChangeRequired && !isInitialPasswordChange) {
+		const isInitialSellerEmailVerification =
+			role === "SELLER" &&
+			req.method === "POST" &&
+			req.baseUrl.endsWith("/seller") &&
+			[
+				"/initial-email-verification/request",
+				"/initial-email-verification/verify",
+			].includes(req.path);
+		if (
+			user.passwordChangeRequired &&
+			!isInitialPasswordChange &&
+			!isInitialSellerEmailVerification
+		) {
 			throw new AppError("Change your initial password before continuing.", 403);
 		}
 
