@@ -29,11 +29,7 @@ const main = async () => {
 		await prisma.$connect();
 		console.log("Connected to the database successfully.");
 
-		if (config.node_env === "production") {
-			await connectRedis();
-		} else {
-			void connectRedis();
-		}
+		await connectRedis();
 
 		try {
 			await transporter.verify();
