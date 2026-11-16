@@ -11,16 +11,16 @@ const PORT = config.port;
 const connectRedis = async () => {
 	try {
 		await redisClient.connect();
+		if (!redisClient.isReady) {
+			throw new Error("Redis connection did not become ready.");
+		}
 		console.log("Redis Connect Successfully");
 	} catch (error) {
-		console.warn(
-			"Redis is unavailable. The server will start, but Redis-backed authentication features will fail until Redis is reachable.",
+		console.error(
+			"Redis is required for OTP authentication. Backend startup aborted.",
+			error instanceof Error ? error.message : error,
 		);
-		console.warn(error instanceof Error ? error.message : error);
-
-		if (config.node_env === "production") {
-			throw error;
-		}
+		throw error;
 	}
 };
 
