@@ -222,7 +222,7 @@ commit real passwords, API keys, or database credentials.
 Start FastAPI:
 
 ``` bash
-python -m uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8001
 ```
 
 Another :

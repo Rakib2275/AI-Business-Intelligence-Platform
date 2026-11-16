@@ -22,6 +22,7 @@ import type {
 	createSellerSchema,
 	updateSellerProfileSchema,
 	updateSellerSchema,
+	verifyInitialSellerEmailSchema,
 	verifySellerEmailSchema,
 } from "./seller.validation.js";
 
@@ -29,6 +30,9 @@ type CreateSellerPayload = z.infer<typeof createSellerSchema>;
 type UpdateSellerPayload = z.infer<typeof updateSellerSchema>;
 type UpdateSellerProfilePayload = z.infer<typeof updateSellerProfileSchema>;
 type ChangeSellerPasswordPayload = z.infer<typeof changeSellerPasswordSchema>;
+type VerifyInitialSellerEmailPayload = z.infer<
+	typeof verifyInitialSellerEmailSchema
+>;
 type VerifySellerEmailPayload = z.infer<typeof verifySellerEmailSchema>;
 
 const sellerSelect = {
@@ -263,6 +267,9 @@ const updateProfile = async (
 const emailVerificationKey = (userId: string) =>
 	`seller-email-change:${userId}`;
 
+const initialEmailVerificationKey = (userId: string) =>
+	`seller-initial-email-verification:${userId}`;
+
 const requestEmailChange = async (
 	userId: string,
 	email: string,
@@ -363,6 +370,102 @@ const verifyEmailChange = async (
 		...context,
 	});
 	return updated;
+};
+
+const requestInitialEmailVerification = async (
+	userId: string,
+	context: AuditRequestContext,
+) => {
+	const seller = await prisma.user.findFirst({
+		where: { id: userId, role: Role.SELLER },
+		select: { email: true, passwordChangeRequired: true },
+	});
+	if (!seller) throw new AppError("Seller not found.", 404);
+	if (!seller.passwordChangeRequired) {
+		throw new AppError("Initial seller verification is already complete.", 409);
+	}
+	if (!redisClient.isReady) {
+		throw new AppError("Email verification is temporarily unavailable.", 503);
+	}
+
+	const otp = randomInt(100000, 1000000).toString();
+	const key = initialEmailVerificationKey(userId);
+	try {
+		await redisClient.set(
+			key,
+			JSON.stringify({ email: seller.email, otp }),
+			{ expiration: { type: "EX", value: 10 * 60 } },
+		);
+		await transporter.sendMail({
+			from: config.email_sender,
+			to: seller.email,
+			subject: "Verify your seller account email",
+			text: `Your seller account verification code is ${otp}. It expires in 10 minutes.`,
+		});
+	} catch (error) {
+		console.error(
+			"Could not send the initial seller email verification code.",
+			error instanceof Error ? error.message : error,
+		);
+		if (redisClient.isReady) await redisClient.del(key);
+		throw new AppError(
+			"Email verification could not be sent. Please try again.",
+			503,
+		);
+	}
+
+	await auditService.log({
+		userId,
+		action: "SELLER_EMAIL_VERIFICATION_REQUESTED",
+		category: "USER",
+		resourceType: "User",
+		resourceId: userId,
+		description: "Seller requested initial account email verification.",
+		...context,
+	});
+};
+
+const verifyInitialEmail = async (
+	userId: string,
+	payload: VerifyInitialSellerEmailPayload,
+	context: AuditRequestContext,
+) => {
+	const seller = await prisma.user.findFirst({
+		where: { id: userId, role: Role.SELLER },
+		select: { email: true, passwordChangeRequired: true },
+	});
+	if (!seller) throw new AppError("Seller not found.", 404);
+	if (!seller.passwordChangeRequired) {
+		throw new AppError("Initial seller verification is already complete.", 409);
+	}
+	if (!redisClient.isReady) {
+		throw new AppError("Email verification is temporarily unavailable.", 503);
+	}
+
+	const key = initialEmailVerificationKey(userId);
+	const value = await redisClient.get(key);
+	if (!value) {
+		throw new AppError("Verification code is invalid or expired.", 400);
+	}
+	const pending = JSON.parse(value) as { email: string; otp: string };
+	if (pending.otp !== payload.otp || pending.email !== seller.email) {
+		throw new AppError("Verification code is invalid or expired.", 400);
+	}
+
+	await prisma.user.update({
+		where: { id: userId },
+		data: { passwordChangeRequired: false },
+	});
+	await redisClient.del(key);
+	await auditService.log({
+		userId,
+		action: "SELLER_EMAIL_VERIFIED",
+		category: "USER",
+		resourceType: "User",
+		resourceId: userId,
+		description: "Seller verified their account email address.",
+		...context,
+	});
 };
 
 const changePassword = async (
@@ -479,6 +582,8 @@ export const sellerService = {
 	updateProfile,
 	requestEmailChange,
 	verifyEmailChange,
+	requestInitialEmailVerification,
+	verifyInitialEmail,
 	changePassword,
 	getDashboard,
 	getSales,

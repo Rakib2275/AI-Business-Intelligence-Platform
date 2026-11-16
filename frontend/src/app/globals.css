@@ -5031,7 +5031,7 @@ summary:focus-visible {
 	z-index: 10;
 	top: 0;
 	display: flex;
-	min-height: 72px;
+	min-height: 64px;
 	align-items: center;
 	justify-content: space-between;
 	padding: 0 max(28px, calc((100vw - 1190px) / 2));

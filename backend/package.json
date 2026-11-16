@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "dev": "tsx watch src/server.ts",
+        "dev": "prisma generate && tsx watch src/server.ts",
         "frontend:dev": "pnpm --dir frontend dev",
         "frontend:build": "pnpm --dir frontend build",
         "build": "prisma generate && node scripts/fix-prisma-esm-imports.js && tsc",

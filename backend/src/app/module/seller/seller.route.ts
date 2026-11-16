@@ -10,6 +10,7 @@ import { sellerController } from "./seller.controller.js";
 import {
 	changeSellerPasswordSchema,
 	updateSellerProfileSchema,
+	verifyInitialSellerEmailSchema,
 	verifySellerEmailSchema,
 } from "./seller.validation.js";
 
@@ -20,6 +21,15 @@ const profileImageUpload = multer({
 });
 
 router.use(auth(Role.SELLER));
+router.post(
+	"/initial-email-verification/request",
+	sellerController.requestInitialEmailVerification,
+);
+router.post(
+	"/initial-email-verification/verify",
+	validedRequest(verifyInitialSellerEmailSchema),
+	sellerController.verifyInitialEmail,
+);
 router.get("/profile", sellerController.getProfile);
 router.patch(
 	"/profile",
