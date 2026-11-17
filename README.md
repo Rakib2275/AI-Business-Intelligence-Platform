@@ -219,6 +219,11 @@ DATABASE_URL=your_postgresql_connection_url
 Add any LLM provider credentials required by your implementation. Never
 commit real passwords, API keys, or database credentials.
 
+Test:
+``` bash
+.\.venv\Scripts\python.exe -m pytest tests/test_forecasting.py -v
+```
+
 Start FastAPI:
 
 ``` bash
