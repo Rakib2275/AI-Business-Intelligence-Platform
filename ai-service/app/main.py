@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.text_to_sql import require_service_key
+from app.api.forecasting import router as forecasting_router
 from app.api.text_to_sql import router as text_to_sql_router
 from app.config import test_connection
 from app.services.schema_service import get_database_schema
@@ -17,6 +18,7 @@ app = FastAPI(
     version="1.0.0",
 )
 app.include_router(text_to_sql_router)
+app.include_router(forecasting_router)
 
 
 @app.get("/")

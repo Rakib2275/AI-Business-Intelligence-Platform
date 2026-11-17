@@ -52,5 +52,12 @@ a statement timeout, and a 500-row cap.
   results, `PIE_CHART` for small category-share results, or `BAR_CHART` for
   other category comparisons. The configuration names the result columns used
   for the x-axis and series; it does not execute or transform the query.
+- `POST /api/v1/forecasting/forecast` — fit a scikit-learn sales forecast from
+  date/value observations (requires `x-api-key`). The backend aggregates uploaded
+  dataset rows by day and sends only the selected date and value. The model
+  infers daily, weekly, or monthly periods, uses linear regression with seasonal
+  features when enough history is available, and returns the observed series
+  plus the requested future periods. This is a per-request fit; it does not call
+  OpenAI or persist a trained model.
 
 Run the focused tests with `python -m pytest`.
