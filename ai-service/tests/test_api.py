@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 import app.api.text_to_sql as text_to_sql_api
@@ -17,6 +18,67 @@ def test_text_to_sql_requires_service_key(monkeypatch) -> None:
         },
     )
     assert response.status_code == 401
+
+
+def test_forecast_requires_service_key(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+    response = TestClient(app).post(
+        "/api/v1/forecasting/forecast",
+        json={
+            "rows": [
+                {"date": "2026-01-01", "sales": 10},
+                {"date": "2026-01-02", "sales": 20},
+                {"date": "2026-01-03", "sales": 30},
+            ],
+            "date_column": "date",
+            "value_column": "sales",
+            "periods": 2,
+        },
+    )
+    assert response.status_code == 401
+
+
+def test_forecast_fits_daily_sales_without_openai(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+    response = TestClient(app).post(
+        "/api/v1/forecasting/forecast",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "rows": [
+                {"day": "2026-01-01", "sales": 10},
+                {"day": "2026-01-01", "sales": 5},
+                {"day": "2026-01-02", "sales": 25},
+                {"day": "2026-01-03", "sales": 35},
+            ],
+            "date_column": "day",
+            "value_column": "sales",
+            "periods": 2,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["observations"][0]["value"] == 15
+    assert response.json()["forecast"][0]["value"] == pytest.approx(45)
+    assert response.json()["trendPerPeriod"] == pytest.approx(10)
+
+
+def test_forecast_rejects_insufficient_history(monkeypatch) -> None:
+    monkeypatch.setattr(text_to_sql_api, "AI_SERVICE_API_KEY", "test-secret")
+    response = TestClient(app).post(
+        "/api/v1/forecasting/forecast",
+        headers={"x-api-key": "test-secret"},
+        json={
+            "rows": [
+                {"date": "2026-01-01", "sales": 10},
+                {"date": "invalid", "sales": 20},
+                {"date": "2026-01-03", "sales": 30},
+            ],
+            "date_column": "date",
+            "value_column": "sales",
+            "periods": 2,
+        },
+    )
+    assert response.status_code == 422
 
 
 def test_text_to_sql_returns_validated_sql(monkeypatch) -> None:
