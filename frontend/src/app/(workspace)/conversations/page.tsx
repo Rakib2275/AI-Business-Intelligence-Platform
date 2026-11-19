@@ -398,14 +398,29 @@ export default function ConversationsPage() {
 
 	const askQuestion = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		if (!selectedId || !datasetId || question.trim().length < 3) return;
+		if (!datasetId || question.trim().length < 3) return;
 		setAsking(true);
 		setError("");
 		const submittedQuestion = question.trim();
 		setQuestion("");
 		try {
+			let conversationId = selectedId;
+			if (!conversationId) {
+				const conversationResponse = await jsonRequest<Conversation>(
+					"/conversations",
+					"POST",
+					{ title: "New conversation" },
+				);
+				conversationId = conversationResponse.data.id;
+				setConversations((current) => [conversationResponse.data, ...current]);
+				setSelectedId(conversationId);
+				await queryClient.invalidateQueries({
+					queryKey: workspaceQueryKeys.conversations,
+				});
+			}
+
 			const response = await jsonRequest<QueryAnswer>(
-				`/conversations/${selectedId}/ask`,
+				`/conversations/${conversationId}/ask`,
 				"POST",
 				{
 					datasetId,
@@ -417,7 +432,7 @@ export default function ConversationsPage() {
 				[response.data.queryId]: response.data,
 			}));
 			await queryClient.invalidateQueries({
-				queryKey: workspaceQueryKeys.conversation(selectedId),
+				queryKey: workspaceQueryKeys.conversation(conversationId),
 			});
 			await queryClient.invalidateQueries({
 				queryKey: workspaceQueryKeys.conversations,
@@ -425,11 +440,11 @@ export default function ConversationsPage() {
 			await queryClient.invalidateQueries({
 				queryKey: workspaceQueryKeys.queryHistory,
 			});
-			await loadMessages(selectedId);
+			await loadMessages(conversationId);
 			setConversations((current) =>
 				current
 					.map((conversation) =>
-						conversation.id === selectedId
+						conversation.id === conversationId
 							? {
 									...conversation,
 									title:
@@ -479,6 +494,8 @@ export default function ConversationsPage() {
 	const selectedConversation = conversations.find(
 		(conversation) => conversation.id === selectedId,
 	);
+	const showChatWorkspace =
+		Boolean(selectedConversation) || (!loading && conversations.length === 0);
 
 	return (
 		<>
@@ -596,7 +613,7 @@ export default function ConversationsPage() {
 				</aside>
 
 				<section className="chat-panel panel">
-					{selectedConversation ? (
+					{showChatWorkspace ? (
 						<>
 							<header className="chat-header">
 								<div className="chat-title-icon">
@@ -604,26 +621,30 @@ export default function ConversationsPage() {
 								</div>
 								<div className="chat-title-copy">
 									<strong>
-										{selectedConversation.title || "New conversation"}
+										{selectedConversation?.title || "New conversation"}
 									</strong>
 									<small>
-										{selectedConversation.status === "ACTIVE"
-											? "Context-aware analysis"
-											: "Archived conversation"}
+										{selectedConversation
+											? selectedConversation.status === "ACTIVE"
+												? "Context-aware analysis"
+												: "Archived conversation"
+											: "Ask anything about your business data"}
 									</small>
 								</div>
 								<div className="chat-header-actions">
 									<span className="data-secure">
 										<Database size={13} /> Private to you
 									</span>
-									<button
-										type="button"
-										className="icon-button"
-										title="Delete conversation"
-										onClick={() => void deleteConversation(selectedId)}
-									>
-										<MoreHorizontal size={18} />
-									</button>
+									{selectedConversation && (
+										<button
+											type="button"
+											className="icon-button"
+											title="Delete conversation"
+											onClick={() => void deleteConversation(selectedId)}
+										>
+											<MoreHorizontal size={18} />
+										</button>
+									)}
 								</div>
 							</header>
 							<div className="chat-timeline" ref={scrollRef}>
@@ -661,7 +682,10 @@ export default function ConversationsPage() {
 											<span />
 										</div>
 										<h3>Every good analysis starts somewhere.</h3>
-										<p>Choose a dataset below, then ask your first question.</p>
+										<p>
+											Choose a dataset, then type any question. The examples
+											below are just ideas to get you started.
+										</p>
 										<div className="suggested-question-list">
 											{suggestedQuestions.map((suggestion) => (
 												<button
@@ -728,7 +752,11 @@ export default function ConversationsPage() {
 											rows={2}
 											aria-label="Your question"
 											disabled={
-												asking || selectedConversation.status !== "ACTIVE"
+												asking ||
+												Boolean(
+													selectedConversation &&
+														selectedConversation.status !== "ACTIVE",
+												)
 											}
 											onKeyDown={(event) => {
 												if (event.key === "Enter" && !event.shiftKey) {
