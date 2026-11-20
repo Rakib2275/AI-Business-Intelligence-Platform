@@ -6,6 +6,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.text_to_sql import require_service_key
 from app.api.forecasting import router as forecasting_router
+from app.api.anomaly import router as anomaly_router
+from app.api.chat import router as chat_router
+from app.api.reports import router as reports_router
 from app.api.text_to_sql import router as text_to_sql_router
 from app.config import test_connection
 from app.services.schema_service import get_database_schema
@@ -19,6 +22,9 @@ app = FastAPI(
 )
 app.include_router(text_to_sql_router)
 app.include_router(forecasting_router)
+app.include_router(anomaly_router)
+app.include_router(chat_router)
+app.include_router(reports_router)
 
 
 @app.get("/")

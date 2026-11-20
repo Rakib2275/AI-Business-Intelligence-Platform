@@ -144,6 +144,29 @@ const getSingleBusinessData = async (
   }
 };
 
+const getBusinessDataSchema = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const result = await businessDataService.getBusinessDataSchema(
+      getUserId(req),
+      getRouteId(req),
+    );
+    res.status(200).json({
+      success: true,
+      message: "Business data schema retrieved successfully",
+      data: result,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Schema unavailable";
+    res.status(message === "Business data not found" ? 404 : 500).json({
+      success: false,
+      message,
+    });
+  }
+};
+
 
 // ========================================
 // UPDATE
@@ -298,6 +321,7 @@ export const businessDataController = {
   createBusinessData,
   getAllBusinessData,
   getSingleBusinessData,
+  getBusinessDataSchema,
   updateBusinessData,
   deleteBusinessData,
   uploadBusinessData,

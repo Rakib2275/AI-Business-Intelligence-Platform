@@ -13,6 +13,13 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 AI_SERVICE_API_KEY = os.getenv("AI_SERVICE_API_KEY", "")
+MODEL_ARTIFACT_BUCKET = os.getenv("MODEL_ARTIFACT_BUCKET", "")
+MODEL_ARTIFACT_PREFIX = os.getenv("MODEL_ARTIFACT_PREFIX", "bi-platform/models").strip("/")
+MODEL_ARTIFACT_S3_ENDPOINT_URL = os.getenv("MODEL_ARTIFACT_S3_ENDPOINT_URL") or None
+MODEL_ARTIFACT_REGION = os.getenv(
+    "MODEL_ARTIFACT_REGION",
+    os.getenv("AWS_DEFAULT_REGION", "us-east-1"),
+)
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
 
