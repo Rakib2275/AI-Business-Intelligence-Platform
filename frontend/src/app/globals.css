@@ -71,6 +71,7 @@ summary:focus-visible {
 	display: flex;
 	width: 254px;
 	flex-direction: column;
+	overflow-y: auto;
 	padding: 27px 16px 17px;
 	color: #d8dce5;
 	background: var(--navy);
@@ -203,6 +204,7 @@ summary:focus-visible {
 }
 .sidebar-tip {
 	position: relative;
+	flex: 0 0 auto;
 	overflow: hidden;
 	padding: 14px 13px 13px;
 	border: 1px solid #303a4a;
@@ -255,6 +257,7 @@ summary:focus-visible {
 }
 .sidebar-footer {
 	display: flex;
+	flex: 0 0 auto;
 	align-items: center;
 	gap: 9px;
 	margin-top: 15px;
