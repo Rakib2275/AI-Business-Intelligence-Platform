@@ -15,3 +15,5 @@ package-lock.json
 !/frontend/pnpm-lock.yaml
 pnpm-workspace.yaml
 .vscode
+
+ai-service/notebooks/dataset/train.csv
