@@ -45,6 +45,11 @@ router.get(
 
 // Get single
 router.get(
+  "/:id/schema",
+  auth(...analysisRoles),
+  businessDataController.getBusinessDataSchema
+);
+router.get(
   "/:id",
   auth(...analysisRoles),
   businessDataController.getSingleBusinessData

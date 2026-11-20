@@ -59,7 +59,10 @@ const getColumnSqlType = (type: string) => {
 	}
 };
 
-const getDatasetColumns = (metadata: unknown, rows: unknown[]): DatasetColumn[] => {
+const getDatasetColumns = (
+	metadata: unknown,
+	rows: unknown[],
+): DatasetColumn[] => {
 	const savedColumns = Array.isArray(metadata)
 		? (metadata[0] as { columns?: unknown } | undefined)?.columns
 		: undefined;
@@ -68,7 +71,12 @@ const getDatasetColumns = (metadata: unknown, rows: unknown[]): DatasetColumn[] 
 			if (!column || typeof column !== "object") return [];
 			const value = column as { name?: unknown; type?: unknown };
 			return typeof value.name === "string"
-				? [{ name: value.name, type: typeof value.type === "string" ? value.type : "TEXT" }]
+				? [
+						{
+							name: value.name,
+							type: typeof value.type === "string" ? value.type : "TEXT",
+						},
+					]
 				: [];
 		});
 	}
@@ -79,6 +87,30 @@ const getDatasetColumns = (metadata: unknown, rows: unknown[]): DatasetColumn[] 
 		: [];
 };
 
+const getRetrievedHistory = async (userId: string, datasetId: string) => {
+	const queries = await prisma.queryHistory.findMany({
+		where: {
+			userId,
+			businessDataId: datasetId,
+			status: QueryStatus.SUCCESS,
+			resultSummary: { not: null },
+		},
+		select: { question: true, resultSummary: true },
+		orderBy: { createdAt: "desc" },
+		take: 20,
+	});
+	return queries.flatMap((query) =>
+		query.resultSummary
+			? [
+					{
+						question: query.question.slice(0, 1_000),
+						summary: query.resultSummary.slice(0, 2_000),
+					},
+				]
+			: [],
+	);
+};
+
 const quoteIdentifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
 const generateSql = async (
@@ -87,6 +119,7 @@ const generateSql = async (
 	description: string | null,
 	columns: DatasetColumn[],
 	conversation: Array<{ role: string; content: string }>,
+	retrievalContext: Array<{ question: string; summary: string }>,
 ) => {
 	const result = await callAiService<{ sql?: unknown }>(
 		"text-to-sql/generate",
@@ -96,6 +129,7 @@ const generateSql = async (
 			description,
 			columns,
 			conversation,
+			retrieval_context: retrievalContext,
 		},
 	);
 	if (typeof result.sql !== "string" || !result.sql.trim()) {
@@ -104,7 +138,33 @@ const generateSql = async (
 	return result.sql.trim();
 };
 
-const summarizeResults = async (question: string, rows: Record<string, unknown>[]) => {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isChatDecision = (
+	value: unknown,
+): value is { responseType: "QUERY" | "CHAT"; answer: string | null } =>
+	isRecord(value) &&
+	((value.responseType === "QUERY" && value.answer === null) ||
+		(value.responseType === "CHAT" && typeof value.answer === "string"));
+
+const decideChatResponse = async (
+	payload: Record<string, unknown>,
+): Promise<{ responseType: "QUERY" | "CHAT"; answer: string | null }> => {
+	const result = await callAiService<unknown>("chat/respond", payload);
+	if (!isChatDecision(result)) {
+		throw new Error("AI service returned an invalid conversational response.");
+	}
+	if (result.responseType === "CHAT" && !result.answer?.trim()) {
+		throw new Error("AI service returned an empty conversational response.");
+	}
+	return result;
+};
+
+const summarizeResults = async (
+	question: string,
+	rows: Record<string, unknown>[],
+) => {
 	if (!rows.length) {
 		return {
 			summary: "The query returned no matching rows.",
@@ -120,15 +180,12 @@ const summarizeResults = async (question: string, rows: Record<string, unknown>[
 			findings?: unknown;
 			recommendations?: unknown;
 			chartConfiguration?: unknown;
-		}>(
-			"text-to-sql/insights",
-			{
-				question,
-				rows: rows.slice(0, 50),
-				result_count: rows.length,
-				result_truncated: rows.length === maxResultRows,
-			},
-		);
+		}>("text-to-sql/insights", {
+			question,
+			rows: rows.slice(0, 50),
+			result_count: rows.length,
+			result_truncated: rows.length === maxResultRows,
+		});
 		if (
 			typeof result.summary !== "string" ||
 			!result.summary.trim() ||
@@ -137,7 +194,9 @@ const summarizeResults = async (question: string, rows: Record<string, unknown>[
 			!Array.isArray(result.recommendations) ||
 			!result.recommendations.every((item) => typeof item === "string")
 		) {
-			throw new Error("AI service returned an invalid business insights response.");
+			throw new Error(
+				"AI service returned an invalid business insights response.",
+			);
 		}
 		return {
 			summary: result.summary.trim(),
@@ -150,11 +209,13 @@ const summarizeResults = async (question: string, rows: Record<string, unknown>[
 		};
 	} catch {
 		return {
-			summary: "The query completed, but its AI-generated analysis is unavailable.",
+			summary:
+				"The query completed, but its AI-generated analysis is unavailable.",
 			findings: [],
 			recommendations: [],
 			chartConfiguration: suggestChartConfiguration(rows),
-			analysisWarning: "AI analysis could not be generated. Query results are available.",
+			analysisWarning:
+				"AI analysis could not be generated. Query results are available.",
 		};
 	}
 };
@@ -191,7 +252,10 @@ const runQuery = async (
 			});
 	if (!conversationRecord) throw new AppError("Conversation not found.", 404);
 	if (conversationRecord.status !== ConversationStatus.ACTIVE) {
-		throw new AppError("Archived conversations cannot receive new questions.", 409);
+		throw new AppError(
+			"Archived conversations cannot receive new questions.",
+			409,
+		);
 	}
 	if (!conversationId) {
 		await auditService.log({
@@ -211,7 +275,8 @@ const runQuery = async (
 	});
 	const startedAt = Date.now();
 	let generatedSql: string | undefined;
-	let stage: "GENERATION" | "VALIDATION" | "EXECUTION" | "ANALYSIS" = "GENERATION";
+	let stage: "GENERATION" | "VALIDATION" | "EXECUTION" | "ANALYSIS" =
+		"GENERATION";
 	let rows: Record<string, unknown>[];
 	let summary: string;
 	let findings: string[];
@@ -221,7 +286,81 @@ const runQuery = async (
 	try {
 		const tableName = dataset.tableName.toLowerCase();
 		const columns = getDatasetColumns(dataset.metadata, dataset.data);
-		if (!columns.length) throw new Error("No columns were found in the dataset.");
+		if (!columns.length)
+			throw new Error("No columns were found in the dataset.");
+		const retrievalContext = await getRetrievedHistory(userId, datasetId);
+		const aiPayload = {
+			question,
+			table_name: tableName,
+			description: dataset.description,
+			columns,
+			conversation,
+			retrieval_context: retrievalContext,
+		};
+		const decision = await decideChatResponse(aiPayload);
+		if (decision.responseType === "CHAT") {
+			const answer = decision.answer;
+			if (!answer)
+				throw new Error(
+					"AI service returned an empty conversational response.",
+				);
+			await prisma.$transaction(async (transaction) => {
+				await transaction.queryHistory.delete({ where: { id: history.id } });
+				await transaction.message.createMany({
+					data: [
+						{
+							conversationId: conversationRecord.id,
+							role: MessageRole.USER,
+							messageType: MessageType.TEXT,
+							content: question,
+						},
+						{
+							conversationId: conversationRecord.id,
+							role: MessageRole.ASSISTANT,
+							messageType: MessageType.TEXT,
+							content: answer,
+						},
+					],
+				});
+				await transaction.conversation.update({
+					where: { id: conversationRecord.id },
+					data: { updatedAt: new Date() },
+				});
+			});
+			await auditService.log({
+				userId,
+				action: "MESSAGE_CREATED",
+				category: "CONVERSATION",
+				resourceType: "Conversation",
+				resourceId: conversationRecord.id,
+				description: "User question and assistant response saved.",
+				metadata: { messageCount: 2 },
+				...context,
+			});
+			await auditService.log({
+				userId,
+				action: "CHAT_RESPONSE_GENERATED",
+				category: "AI",
+				resourceType: "Conversation",
+				resourceId: conversationRecord.id,
+				description:
+					"Conversational response generated without a dataset query.",
+				metadata: { datasetId, messageCount: 2 },
+				...context,
+			});
+			return {
+				queryId: null,
+				conversationId: conversationRecord.id,
+				responseType: "CHAT" as const,
+				summary: answer,
+				rows: [],
+				columns: [],
+				chartConfiguration: suggestChartConfiguration([]),
+				findings: [],
+				recommendations: [],
+				truncated: false,
+			};
+		}
 
 		generatedSql = await generateSql(
 			question,
@@ -229,18 +368,24 @@ const runQuery = async (
 			dataset.description,
 			columns,
 			conversation,
+			retrievalContext,
 		);
 		stage = "VALIDATION";
 		assertSafeSql(generatedSql, tableName);
 
 		const recordDefinition = columns
-			.map((column) => `${quoteIdentifier(column.name)} ${getColumnSqlType(column.type)}`)
+			.map(
+				(column) =>
+					`${quoteIdentifier(column.name)} ${getColumnSqlType(column.type)}`,
+			)
 			.join(", ");
 		const executableSql = `WITH ${quoteIdentifier(tableName)} AS (SELECT * FROM jsonb_to_recordset($1::jsonb) AS source_rows(${recordDefinition})) SELECT * FROM (${generatedSql}) AS query_result LIMIT ${maxResultRows}`;
 		stage = "EXECUTION";
 		rows = await prisma.$transaction(async (transaction) => {
 			await transaction.$executeRawUnsafe("SET TRANSACTION READ ONLY");
-			await transaction.$executeRawUnsafe("SET LOCAL statement_timeout = '5000ms'");
+			await transaction.$executeRawUnsafe(
+				"SET LOCAL statement_timeout = '5000ms'",
+			);
 			return transaction.$queryRawUnsafe<Record<string, unknown>[]>(
 				executableSql,
 				JSON.stringify(dataset.data),
@@ -293,7 +438,11 @@ const runQuery = async (
 			resourceType: "QueryHistory",
 			resourceId: history.id,
 			description: safeMessage,
-			metadata: { datasetId: dataset.id, conversationId: conversationRecord.id, stage },
+			metadata: {
+				datasetId: dataset.id,
+				conversationId: conversationRecord.id,
+				stage,
+			},
 			...context,
 		});
 		await auditService.log({
@@ -312,7 +461,11 @@ const runQuery = async (
 		});
 		throw new AppError(
 			safeMessage,
-			validationRejected ? 422 : stage === "GENERATION" || stage === "ANALYSIS" ? 502 : 422,
+			validationRejected
+				? 422
+				: stage === "GENERATION" || stage === "ANALYSIS"
+					? 502
+					: 422,
 		);
 	}
 
@@ -434,7 +587,12 @@ const runQuery = async (
 const refreshSavedQuery = async (userId: string, queryId: string) => {
 	const history = await prisma.queryHistory.findFirst({
 		where: { id: queryId, userId, status: QueryStatus.SUCCESS },
-		select: { id: true, businessDataId: true, generatedSql: true, resultSummary: true },
+		select: {
+			id: true,
+			businessDataId: true,
+			generatedSql: true,
+			resultSummary: true,
+		},
 	});
 	if (!history?.businessDataId || !history.generatedSql) {
 		throw new AppError("Saved query is not available for this user.", 404);
@@ -447,19 +605,28 @@ const refreshSavedQuery = async (userId: string, queryId: string) => {
 		throw new AppError("The saved query's source dataset is unavailable.", 409);
 	}
 	const columns = getDatasetColumns(dataset.metadata, dataset.data);
-	if (!columns.length) throw new AppError("The saved query has no available columns.", 409);
+	if (!columns.length)
+		throw new AppError("The saved query has no available columns.", 409);
 	try {
 		assertSafeSql(history.generatedSql, dataset.tableName.toLowerCase());
 	} catch {
-		throw new AppError("The saved query no longer passes read-only validation.", 409);
+		throw new AppError(
+			"The saved query no longer passes read-only validation.",
+			409,
+		);
 	}
 	const recordDefinition = columns
-		.map((column) => `${quoteIdentifier(column.name)} ${getColumnSqlType(column.type)}`)
+		.map(
+			(column) =>
+				`${quoteIdentifier(column.name)} ${getColumnSqlType(column.type)}`,
+		)
 		.join(", ");
 	const executableSql = `WITH ${quoteIdentifier(dataset.tableName.toLowerCase())} AS (SELECT * FROM jsonb_to_recordset($1::jsonb) AS source_rows(${recordDefinition})) SELECT * FROM (${history.generatedSql}) AS query_result LIMIT ${maxResultRows}`;
 	const rows = await prisma.$transaction(async (transaction) => {
 		await transaction.$executeRawUnsafe("SET TRANSACTION READ ONLY");
-		await transaction.$executeRawUnsafe("SET LOCAL statement_timeout = '5000ms'");
+		await transaction.$executeRawUnsafe(
+			"SET LOCAL statement_timeout = '5000ms'",
+		);
 		return transaction.$queryRawUnsafe<Record<string, unknown>[]>(
 			executableSql,
 			JSON.stringify(dataset.data),

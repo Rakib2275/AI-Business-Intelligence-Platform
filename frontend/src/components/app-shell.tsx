@@ -5,11 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import {
 	Activity,
 	ArrowUpRight,
+	AlertTriangle,
 	BarChart3,
 	Bot,
 	ChevronDown,
 	Command,
 	Database,
+	FileText,
 	House,
 	LayoutDashboard,
 	LogOut,
@@ -18,6 +20,7 @@ import {
 	Search,
 	ShieldCheck,
 	Sparkles,
+	TrendingUp,
 	UsersRound,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -30,6 +33,9 @@ const navItems = [
 	{ label: "Seller dashboard", href: "/seller/dashboard", icon: LayoutDashboard, seller: true },
 	{ label: "Sales", href: "/seller/sales", icon: BarChart3, seller: true },
 	{ label: "Ask your data", href: "/conversations", icon: MessageSquareText, analysis: true },
+	{ label: "Forecasting", href: "/forecasting", icon: TrendingUp, analysis: true },
+	{ label: "Anomalies", href: "/anomalies", icon: AlertTriangle, analysis: true },
+	{ label: "AI reports", href: "/reports", icon: FileText, analysis: true },
 	{ label: "Dashboards", href: "/dashboards", icon: BarChart3, analysis: true },
 	{ label: "Seller management", href: "/admin/sellers", icon: UsersRound, admin: true },
 	{ label: "Add product", href: "/products/new", icon: PackagePlus, admin: true },

@@ -86,9 +86,10 @@ export type ChartConfiguration = {
 };
 
 export type QueryAnswer = {
-	history: QueryRecord;
-	queryId: string;
+	history?: QueryRecord;
+	queryId?: string | null;
 	conversationId: string;
+	responseType?: "QUERY" | "CHAT";
 	sql?: string;
 	rows: Array<Record<string, unknown>>;
 	columns: string[];

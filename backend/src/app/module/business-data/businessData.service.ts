@@ -237,6 +237,39 @@ const getSingleBusinessData = async (
   return businessData;
 };
 
+const getBusinessDataSchema = async (userId: string, id: string) => {
+  const dataset = await prisma.businessData.findFirst({
+    where: { id, userId },
+    select: {
+      id: true,
+      name: true,
+      updatedAt: true,
+      metadata: { select: { columns: true } },
+    },
+  });
+  if (!dataset) throw new Error("Business data not found");
+
+  const rawColumns = dataset.metadata[0]?.columns;
+  const columns = Array.isArray(rawColumns)
+    ? rawColumns.flatMap((column) => {
+        if (!column || typeof column !== "object" || Array.isArray(column)) return [];
+        const value = column as Record<string, unknown>;
+        if (typeof value.name !== "string") return [];
+        return [{
+          name: value.name,
+          type: typeof value.type === "string" ? value.type : "TEXT",
+          nullable: typeof value.nullable === "boolean" ? value.nullable : true,
+        }];
+      })
+    : [];
+  return {
+    id: dataset.id,
+    name: dataset.name,
+    updatedAt: dataset.updatedAt.toISOString(),
+    columns,
+  };
+};
+
 
 // ======================================================
 // 4. UPDATE BUSINESS DATA
@@ -667,6 +700,8 @@ export const businessDataService = {
   getAllBusinessData,
 
   getSingleBusinessData,
+
+  getBusinessDataSchema,
 
   updateBusinessData,
 
