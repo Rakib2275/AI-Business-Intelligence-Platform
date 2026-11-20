@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						<strong>Your data, in context.</strong>
 						<p>Ask a follow-up. Noviq remembers what matters.</p>
 						<Link href="/conversations">
-							Start a conversation <ArrowUpRight size={13} />
+							Ask AI <ArrowUpRight size={13} />
 						</Link>
 					</div>
 				)}

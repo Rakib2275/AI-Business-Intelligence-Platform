@@ -750,7 +750,7 @@ export default function HomePage() {
 				</nav>
 			)}
 			<main className={`public-dashboard ${isCustomer ? "public-storefront-dashboard" : ""}`}>
-				{!isCustomer && !sessionLoading && <section className="public-hero">
+				{!currentUser && !sessionLoading && <section className="public-hero">
 					<div className="public-hero-copy">
 						<div className="eyebrow">
 							<span className="eyebrow-dot" /> BUSINESS INTELLIGENCE, IN FOCUS
