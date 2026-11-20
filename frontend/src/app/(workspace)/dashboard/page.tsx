@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+	type ChangeEvent,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowRight,
@@ -12,15 +18,20 @@ import {
 	MessageSquareText,
 	Plus,
 	Sparkles,
+	Trash2,
+	Upload,
 } from "lucide-react";
-import { ApiError } from "@/lib/api";
+import { ApiError, apiRequest } from "@/lib/api";
 import type {
 	Conversation,
 	Dashboard,
 	Dataset,
 	QueryRecord,
 } from "@/lib/types";
-import { workspaceQueries } from "@/lib/workspace-queries";
+import {
+	workspaceQueries,
+	workspaceQueryKeys,
+} from "@/lib/workspace-queries";
 import {
 	EmptyState,
 	ErrorNotice,
@@ -43,11 +54,19 @@ const emptyOverview: OverviewState = {
 	queries: [],
 };
 
+const maxDatasetSize = 10 * 1024 * 1024;
+const datasetFileTypes = ".csv,.xls,.xlsx";
+
 export default function OverviewPage() {
 	const queryClient = useQueryClient();
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [overview, setOverview] = useState<OverviewState>(emptyOverview);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [datasetActionError, setDatasetActionError] = useState("");
+	const [datasetActionSuccess, setDatasetActionSuccess] = useState("");
+	const [uploading, setUploading] = useState(false);
+	const [deletingDatasetId, setDeletingDatasetId] = useState("");
 
 	const loadOverview = useCallback(async () => {
 		setLoading(true);
@@ -87,6 +106,94 @@ export default function OverviewPage() {
 	useEffect(() => {
 		void loadOverview();
 	}, [loadOverview]);
+
+	const handleDatasetUpload = async (
+		event: ChangeEvent<HTMLInputElement>,
+	) => {
+		const file = event.target.files?.[0];
+		event.target.value = "";
+		if (!file) return;
+
+		setDatasetActionError("");
+		setDatasetActionSuccess("");
+		if (!/\.(csv|xls|xlsx)$/i.test(file.name)) {
+			setDatasetActionError("Choose a CSV, XLS, or XLSX file.");
+			return;
+		}
+		if (file.size > maxDatasetSize) {
+			setDatasetActionError("The file must be 10 MB or smaller.");
+			return;
+		}
+
+		const formData = new FormData();
+		formData.append("file", file);
+		setUploading(true);
+		try {
+			const response = await apiRequest<Dataset>(
+				"/business-data/upload",
+				{ method: "POST", body: formData },
+			);
+			const dataset = response.data;
+			setOverview((current) => ({
+				...current,
+				datasets: [
+					dataset,
+					...current.datasets.filter((item) => item.id !== dataset.id),
+				],
+			}));
+			queryClient.setQueryData<Dataset[]>(
+				workspaceQueryKeys.datasets,
+				(datasets = []) => [
+					dataset,
+					...datasets.filter((item) => item.id !== dataset.id),
+				],
+			);
+			setDatasetActionSuccess(`${response.data.name} uploaded successfully.`);
+		} catch (caught) {
+			setDatasetActionError(
+				caught instanceof ApiError
+					? caught.message
+					: "The dataset could not be uploaded. Please try again.",
+			);
+		} finally {
+			setUploading(false);
+		}
+	};
+
+	const handleDatasetDelete = async (dataset: Dataset) => {
+		if (
+			!window.confirm(
+				`Delete dataset "${dataset.name}"? This cannot be undone.`,
+			)
+		)
+			return;
+
+		setDatasetActionError("");
+		setDatasetActionSuccess("");
+		setDeletingDatasetId(dataset.id);
+		try {
+			await apiRequest<null>(`/business-data/${dataset.id}`, {
+				method: "DELETE",
+			});
+			setOverview((current) => ({
+				...current,
+				datasets: current.datasets.filter((item) => item.id !== dataset.id),
+			}));
+			queryClient.setQueryData<Dataset[]>(
+				workspaceQueryKeys.datasets,
+				(datasets = []) => datasets.filter((item) => item.id !== dataset.id),
+			);
+			setDatasetActionSuccess(`${dataset.name} deleted successfully.`);
+		} catch (caught) {
+			setDatasetActionError(
+				caught instanceof ApiError
+					? caught.message
+					: "The dataset could not be deleted. Please try again.",
+			);
+		} finally {
+			setDeletingDatasetId("");
+		}
+	};
 
 	const totalRows = overview.datasets.reduce(
 		(total, dataset) => total + (dataset.rowCount ?? 0),
@@ -291,7 +398,24 @@ export default function OverviewPage() {
 							<div className="eyebrow">READY TO EXPLORE</div>
 							<h2>Your data</h2>
 						</div>
-						<Database size={18} className="panel-heading-icon" />
+						<>
+							<input
+								ref={fileInputRef}
+								type="file"
+								accept={datasetFileTypes}
+								hidden
+								onChange={(event) => void handleDatasetUpload(event)}
+							/>
+							<button
+								className="button button-secondary button-small"
+								type="button"
+								disabled={uploading || Boolean(deletingDatasetId)}
+								onClick={() => fileInputRef.current?.click()}
+							>
+								<Upload size={14} />
+								{uploading ? "Uploading…" : "Upload dataset"}
+							</button>
+						</>
 					</div>
 					{loading ? (
 						<LoadingBlock />
@@ -315,13 +439,31 @@ export default function OverviewPage() {
 									>
 										Ask <ArrowUpRight size={12} />
 									</Link>
+									<button
+										className="icon-button dataset-delete"
+										type="button"
+										aria-label={`Delete ${dataset.name}`}
+										title="Delete dataset"
+										disabled={uploading || Boolean(deletingDatasetId)}
+										onClick={() => void handleDatasetDelete(dataset)}
+									>
+										<Trash2 size={14} />
+									</button>
 								</div>
 							))}
 						</div>
 					) : (
 						<div className="panel-blank">
-							Upload a dataset to start exploring.
+							Upload a CSV or Excel file (up to 10 MB) to start exploring.
 						</div>
+					)}
+					{datasetActionError && (
+						<ErrorNotice message={datasetActionError} />
+					)}
+					{datasetActionSuccess && (
+						<span className="status-pill status-good" role="status">
+							{datasetActionSuccess}
+						</span>
 					)}
 				</section>
 			</div>

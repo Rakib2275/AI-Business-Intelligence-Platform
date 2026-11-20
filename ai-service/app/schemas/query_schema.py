@@ -17,6 +17,13 @@ class ConversationTurn(BaseModel):
     content: str = Field(max_length=4000)
 
 
+class RetrievedContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1, max_length=1000)
+    summary: str = Field(max_length=2000)
+
+
 class TextToSqlRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -25,10 +32,22 @@ class TextToSqlRequest(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     columns: list[DatasetColumn] = Field(min_length=1, max_length=500)
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=12)
+    retrieval_context: list[RetrievedContext] = Field(default_factory=list, max_length=20)
 
 
 class TextToSqlResponse(BaseModel):
     sql: str
+
+
+class ChatRequest(TextToSqlRequest):
+    pass
+
+
+class ChatDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    response_type: Literal["QUERY", "CHAT"] = Field(alias="responseType")
+    answer: str | None = Field(default=None, max_length=4_000)
 
 
 class SummarizeRequest(BaseModel):

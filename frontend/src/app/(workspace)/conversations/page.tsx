@@ -427,10 +427,13 @@ export default function ConversationsPage() {
 					question: submittedQuestion,
 				},
 			);
-			setAnswers((current) => ({
-				...current,
-				[response.data.queryId]: response.data,
-			}));
+			const queryId = response.data.queryId;
+			if (queryId) {
+				setAnswers((current) => ({
+					...current,
+					[queryId]: response.data,
+				}));
+			}
 			await queryClient.invalidateQueries({
 				queryKey: workspaceQueryKeys.conversation(conversationId),
 			});

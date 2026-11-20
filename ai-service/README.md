@@ -22,6 +22,14 @@ same `AI_SERVICE_API_KEY` and `AI_SERVICE_URL=http://127.0.0.1:8001` in
 `backend/.env`. Set `DATABASE_URL` when using the database health check or schema
 endpoint; use a read-only PostgreSQL account.
 
+Configure a private S3-compatible bucket for model artifacts with
+`MODEL_ARTIFACT_BUCKET`, `MODEL_ARTIFACT_PREFIX`, and `MODEL_ARTIFACT_REGION`.
+For MinIO or another compatible service, also set
+`MODEL_ARTIFACT_S3_ENDPOINT_URL`. Prefer workload IAM/role credentials in
+production; otherwise provide AWS-compatible credentials through the deployment
+secret manager. Enable bucket versioning, encryption, and a lifecycle policy for
+old model versions. Never accept or load user-uploaded joblib files.
+
 Run the API from this directory:
 
 ```powershell
@@ -42,6 +50,9 @@ a statement timeout, and a 500-row cap.
   `x-api-key`).
 - `POST /api/v1/text-to-sql/generate` — generate and validate a SELECT statement
   (requires `x-api-key`).
+- `POST /api/v1/chat/respond` — classify a conversation turn as a dataset query
+  or a direct conversational response, using the supplied schema and conversation
+  context (requires `x-api-key`).
 - `POST /api/v1/text-to-sql/insights` — summarize SQL results with evidence-based
   findings and suggested next steps (requires `x-api-key`). Send the question,
   at most 50 result rows, the query result count, and whether the 500-row cap
@@ -52,12 +63,49 @@ a statement timeout, and a 500-row cap.
   results, `PIE_CHART` for small category-share results, or `BAR_CHART` for
   other category comparisons. The configuration names the result columns used
   for the x-axis and series; it does not execute or transform the query.
-- `POST /api/v1/forecasting/forecast` — fit a scikit-learn sales forecast from
-  date/value observations (requires `x-api-key`). The backend aggregates uploaded
-  dataset rows by day and sends only the selected date and value. The model
-  infers daily, weekly, or monthly periods, uses linear regression with seasonal
-  features when enough history is available, and returns the observed series
-  plus the requested future periods. This is a per-request fit; it does not call
-  OpenAI or persist a trained model.
+- `POST /api/v1/reports/generate` — synthesize an executive summary, findings,
+  and recommendations from successful query summaries (requires `x-api-key`).
+- `POST /api/v1/forecasting/train` — chronologically evaluate and train a
+  dataset-specific forecast model, then save a versioned joblib artifact in the
+  configured private bucket (requires `x-api-key`).
+- `POST /api/v1/forecasting/predict` — load the matching saved artifact and
+  return future periods without fitting the model again (requires `x-api-key`).
+  Prediction is rejected when the dataset revision differs from the revision
+  used to train the artifact; retrain after changing the dataset.
+- `POST /api/v1/anomalies/train` — fit an Isolation Forest model to selected
+  numeric dataset features and save a versioned artifact in the private bucket.
+- `POST /api/v1/anomalies/detect` — load the matching saved artifact and score
+  rows without fitting again. Results are limited to the 1,000 highest-scoring
+  flagged rows; retrain after the dataset revision changes. Anomaly flags are
+  review candidates, not confirmed incidents.
+
+  Conversational query requests retrieve at most 20 successful prior questions and
+  summaries for the same authenticated user and dataset. The AI service ranks those
+  documents lexically and includes only the top three relevant matches in the
+  prompt; it does not mix histories across users or datasets. Dataset questions
+  still pass through SQL validation and read-only execution, while general
+  explanations are saved as normal conversation messages.
+
+The Express API exposes authenticated `POST /api/v1/analytics/forecast/train`
+and `POST /api/v1/analytics/forecast` routes. It verifies dataset ownership,
+aggregates the selected date/value columns, and passes a dataset revision to the
+AI service. Training reports chronological holdout MAE/RMSE; the final model is
+then refit on all valid history and saved. The forecasting baseline is
+scikit-learn linear regression with optional Fourier seasonality; it is a
+baseline, so compare its metrics with notebook experiments before relying on
+business decisions.
+
+Anomaly workflows are exposed through authenticated
+`POST /api/v1/analytics/anomalies/train` and
+`POST /api/v1/analytics/anomalies` routes. They enforce dataset ownership,
+select 1–20 numeric features, and bind the saved model to the dataset revision.
+The model uses a fixed 5% contamination setting and median-imputes missing
+feature values; its in-sample flagged count is descriptive, not a supervised
+accuracy metric.
+
+The existing authenticated report endpoint now uses the AI service to generate
+the report summary and evidence-based findings/recommendations before producing
+the PDF. If AI generation fails, the report is marked failed rather than
+returning a success-shaped summary-only PDF.
 
 Run the focused tests with `python -m pytest`.
