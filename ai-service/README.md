@@ -22,13 +22,20 @@ same `AI_SERVICE_API_KEY` and `AI_SERVICE_URL=http://127.0.0.1:8001` in
 `backend/.env`. Set `DATABASE_URL` when using the database health check or schema
 endpoint; use a read-only PostgreSQL account.
 
-Configure a private S3-compatible bucket for model artifacts with
-`MODEL_ARTIFACT_BUCKET`, `MODEL_ARTIFACT_PREFIX`, and `MODEL_ARTIFACT_REGION`.
-For MinIO or another compatible service, also set
+Local development defaults to filesystem storage under
+`ai-service/models/artifacts` (`MODEL_ARTIFACT_BACKEND=local`). The artifact
+directory is ignored by Git. To use a different local path, set
+`MODEL_ARTIFACT_LOCAL_DIR`; relative paths are resolved from `ai-service`.
+
+For deployment, set `MODEL_ARTIFACT_BACKEND=s3` and configure a private
+S3-compatible bucket with `MODEL_ARTIFACT_BUCKET`, `MODEL_ARTIFACT_PREFIX`, and
+`MODEL_ARTIFACT_REGION`. For MinIO or another compatible service, also set
 `MODEL_ARTIFACT_S3_ENDPOINT_URL`. Prefer workload IAM/role credentials in
 production; otherwise provide AWS-compatible credentials through the deployment
-secret manager. Enable bucket versioning, encryption, and a lifecycle policy for
-old model versions. Never accept or load user-uploaded joblib files.
+secret manager. A container's local filesystem may be ephemeral or isolated
+between replicas, so use shared persistent S3-compatible storage for deployed
+instances. Enable bucket versioning, encryption, and a lifecycle policy for old
+model versions. Never accept or load user-uploaded joblib files.
 
 Run the API from this directory:
 
@@ -67,13 +74,14 @@ a statement timeout, and a 500-row cap.
   and recommendations from successful query summaries (requires `x-api-key`).
 - `POST /api/v1/forecasting/train` — chronologically evaluate and train a
   dataset-specific forecast model, then save a versioned joblib artifact in the
-  configured private bucket (requires `x-api-key`).
+  configured local directory or private bucket (requires `x-api-key`).
 - `POST /api/v1/forecasting/predict` — load the matching saved artifact and
   return future periods without fitting the model again (requires `x-api-key`).
   Prediction is rejected when the dataset revision differs from the revision
   used to train the artifact; retrain after changing the dataset.
 - `POST /api/v1/anomalies/train` — fit an Isolation Forest model to selected
-  numeric dataset features and save a versioned artifact in the private bucket.
+  numeric dataset features and save a versioned artifact in the configured
+  storage backend.
 - `POST /api/v1/anomalies/detect` — load the matching saved artifact and score
   rows without fitting again. Results are limited to the 1,000 highest-scoring
   flagged rows; retrain after the dataset revision changes. Anomaly flags are

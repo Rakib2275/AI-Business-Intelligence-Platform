@@ -50,6 +50,7 @@ def test_saved_forecast_artifact_is_scoped_and_loaded_by_version(monkeypatch) ->
         rows=rows,
     )
     fake_s3 = InMemoryS3()
+    monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_BACKEND", "s3")
     monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_BUCKET", "private-models")
     monkeypatch.setattr(artifact_store, "_s3_client", lambda: fake_s3)
 
@@ -86,6 +87,7 @@ def test_saved_anomaly_artifact_is_dataset_and_feature_scoped(monkeypatch) -> No
         rows=[{"amount": 100 + index} for index in range(40)],
     )
     fake_s3 = InMemoryS3()
+    monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_BACKEND", "s3")
     monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_BUCKET", "private-models")
     monkeypatch.setattr(artifact_store, "_s3_client", lambda: fake_s3)
 
@@ -112,3 +114,63 @@ def test_saved_anomaly_artifact_is_dataset_and_feature_scoped(monkeypatch) -> No
             feature_columns=["different"],
             data_version="revision-1",
         )
+
+
+def test_saved_forecast_artifact_is_persisted_locally(monkeypatch, tmp_path) -> None:
+    dataset_id = uuid4()
+    version = "local-revision-1"
+    rows = [
+        {"date": f"2026-01-{day:02d}", "value": day * 10}
+        for day in range(1, 13)
+    ]
+    artifact, _, _ = train_forecast_model(
+        dataset_id=dataset_id,
+        date_column="date",
+        value_column="value",
+        data_version=version,
+        rows=rows,
+    )
+    monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_BACKEND", "local")
+    monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_LOCAL_DIR", tmp_path)
+
+    save_forecast_artifact(artifact)
+    loaded = load_forecast_artifact(
+        dataset_id=dataset_id,
+        date_column="date",
+        value_column="value",
+        data_version=version,
+    )
+
+    assert loaded["model_version"] == artifact["model_version"]
+    assert len(list(tmp_path.rglob("*.joblib"))) == 1
+    with pytest.raises(ForecastArtifactNotFound):
+        load_forecast_artifact(
+            dataset_id=dataset_id,
+            date_column="date",
+            value_column="value",
+            data_version="different-revision",
+        )
+
+
+def test_saved_anomaly_artifact_is_persisted_locally(monkeypatch, tmp_path) -> None:
+    dataset_id = uuid4()
+    feature_columns = ["amount"]
+    artifact, _, _ = train_anomaly_model(
+        dataset_id=dataset_id,
+        feature_columns=feature_columns,
+        data_version="local-revision-1",
+        rows=[{"amount": 100 + index} for index in range(40)],
+    )
+    monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_BACKEND", "local")
+    monkeypatch.setattr(artifact_store, "MODEL_ARTIFACT_LOCAL_DIR", tmp_path)
+
+    save_model_artifact("anomaly", artifact, feature_columns)
+    loaded = load_model_artifact(
+        "anomaly",
+        dataset_id=dataset_id,
+        feature_columns=feature_columns,
+        data_version="local-revision-1",
+    )
+
+    assert loaded["model_version"] == artifact["model_version"]
+    assert len(list(tmp_path.rglob("*.joblib"))) == 1
